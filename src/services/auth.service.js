@@ -1,6 +1,7 @@
 import userRepository from "../repositories/user.repository.js";
 import bcrypt from "bcrypt";
 import { UserRegisterResponse } from "../schemas/user.schema.js";
+import { AuthError, ConflictError } from "../utils/errors.js";
 
 async function register({ email, name, password }) {
   const existingUser = await userRepository.findByEmail(email);

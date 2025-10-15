@@ -19,6 +19,7 @@ export async function registerUser(req, res, next) {
     }
     console.log("Error in registerUser:", error);
   }
+  next();
 }
 
 export const login = async (req, res) => {
