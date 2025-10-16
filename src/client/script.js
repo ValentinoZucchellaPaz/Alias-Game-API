@@ -15,11 +15,9 @@ socket.on("connect", () => {
 socket.on("receive-message", (message) => {
   displayMessage(message);
 });
-//new
 adminSocket.on('connect_error', (error) => {
   displayMessage(error);
 })
-//new
 //actions taken when submitting form
 form.addEventListener("submit", (e) => {
   e.preventDefault();
