@@ -32,8 +32,20 @@ const io = new Server(server);
 const adminIo = io.of("/admin");
 
 adminIo.on("connection", (socket) => {
-  console.log(`socket ${socket} has conected to /admin namespace`);
+  console.log(`socket ${socket.id} has conected to /admin namespace as (username): ` + socket.username);
 });
+
+adminIo.use((socket, next) => {
+  if (socket.handshake.auth.token)
+  {
+    socket.username = getUsernameFromToken(socket.handshake.auth.token);
+    next();
+  }
+  else{
+    next(new Error('Please send a token'));
+  }
+});
+
 
 io.on("connection", (socket) => {
   socket.on("send-message", (message, room) => {
@@ -48,3 +60,10 @@ io.on("connection", (socket) => {
     cb(`You've joined to room '${room}'`);
   });
 });
+
+
+//Utility functions below:
+function getUsernameFromToken(token){
+  //get user information from token
+  return token; //now just returning token
+}
