@@ -42,8 +42,9 @@ io.on("connection", (socket) => {
       socket.to(room).emit("receive-message", message);
     }
   });
-  socket.on('join-room', (room)=>{
+  socket.on('join-room', (room, cb)=>{
     socket.join(room);
+    cb(`You've joined to room ${room}`);
   });
 
 });
