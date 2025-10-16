@@ -13,11 +13,19 @@ const PORT = process.env.PORT || 3000;
 
 //FOR WEB SOCKETS
 import http from "http";
+import express from "express";
 import {Server} from "socket.io";
+import path from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const socketApp= express();
 const SVPORT = process.env.SVPORT || 4000;
 
-const server = http.createServer(app);
+//Serve static files from /public
+socketApp.use(express.static(path.join(__dirname, "public")));
+
+const server = http.createServer(socketApp);
 const io = new Server(server);
 
 io.on("connection", (socket) => {
