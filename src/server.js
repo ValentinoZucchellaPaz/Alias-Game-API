@@ -28,6 +28,12 @@ const io = new Server(server);
 server.listen(SVPORT, () => {
   console.log("WebSocket server on http://localhost:" + SVPORT);
 });
+//--new
+const userIo = io.of('/user');
+userIo.on('connection', (socket)=>{
+  console.log('conected to /user namespace')
+})
+//--new
 
 io.on("connection", (socket) => {
 
@@ -48,3 +54,4 @@ io.on("connection", (socket) => {
   });
 
 });
+
