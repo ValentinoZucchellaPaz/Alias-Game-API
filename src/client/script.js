@@ -2,11 +2,18 @@ const joinRoomButton = document.getElementById("room-button");
 const messageInput = document.getElementById("message-input");
 const roomInput = document.getElementById("room-input");
 const form = document.getElementById("form");
+const joinRedButton = document.getElementById("join-red-button");
+const joinBlueButton = document.getElementById("join-blue-button");
 
 const socket = io("http://localhost:4000");
 
 // const adminSocket = io("http://localhost:4000/admin"); //will throw error
 const adminSocket = io("http://localhost:4000/admin", { auth: { token: "test" } }); //will not throw
+const userSocket = io("http://localhost:4000/user");
+
+userSocket.on("connect", () => {
+  displayMessage(`Connected to /user namespace with id: ${userSocket.id}`);
+});
 
 socket.on("connect", () => {
   displayMessage(`You've connected with id: ${socket.id}`);
@@ -18,7 +25,22 @@ socket.on("receive-message", (message) => {
 adminSocket.on("connect_error", (error) => {
   displayMessage(error);
 });
-//actions taken when submitting form
+
+joinRedButton.addEventListener("click", () => {
+  const room = roomInput.value;
+  userSocket.emit("join-team", { room, team: "red" }, (response) => {
+    displayMessage(response);
+  });
+});
+
+joinBlueButton.addEventListener("click", () => {
+  const room = roomInput.value;
+  userSocket.emit("join-team", { room, team: "blue" }, (response) => {
+    displayMessage(response);
+  });
+});
+
+//actions taken when submitting form (message sending)
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   const message = messageInput.value;
