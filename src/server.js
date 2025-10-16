@@ -27,13 +27,14 @@ socketApp.use(express.static(path.join(__dirname, "client")));
 
 const server = http.createServer(socketApp);
 const io = new Server(server);
+server.listen(SVPORT, () => {
+  console.log("WebSocket server on http://localhost:"+SVPORT);
+});
+
 
 io.on("connection", (socket) => {
   console.log(socket.id);
 });
 
-server.listen(SVPORT, () => {
-  console.log("WebSocket server on http://localhost:"+SVPORT);
-});
 
 
