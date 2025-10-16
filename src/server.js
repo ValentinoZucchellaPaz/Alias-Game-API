@@ -28,28 +28,24 @@ const io = new Server(server);
 server.listen(SVPORT, () => {
   console.log("WebSocket server on http://localhost:" + SVPORT);
 });
-const userIo = io.of('/user');
-userIo.on('connection', (socket)=>{
-  console.log('conected to /user namespace')
-})
+const userIo = io.of("/user");
+userIo.on("connection", (socket) => {
+  console.log("conected to /user namespace");
+});
 
 io.on("connection", (socket) => {
-
   console.log(socket.id);
 
-  socket.on("send-message", (message,room) => {
+  socket.on("send-message", (message, room) => {
     console.log(message);
-    if (room===''){
+    if (room === "") {
       socket.broadcast.emit("receive-message", message);
-    }
-    else{
+    } else {
       socket.to(room).emit("receive-message", message);
     }
   });
-  socket.on('join-room', (room, cb)=>{
+  socket.on("join-room", (room, cb) => {
     socket.join(room);
     cb(`You've joined to room '${room}'`);
   });
-
 });
-

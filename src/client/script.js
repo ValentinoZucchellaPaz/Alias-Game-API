@@ -6,7 +6,6 @@ const form = document.getElementById("form");
 const socket = io("http://localhost:4000");
 const userSocket = io("http://localhost:4000/user");
 
-
 socket.on("connect", () => {
   displayMessage(`You've connected with id: ${socket.id}`);
 });
@@ -30,7 +29,7 @@ form.addEventListener("submit", (e) => {
 
 joinRoomButton.addEventListener("click", (e) => {
   const room = roomInput.value;
-  socket.emit('join-room',room, (message)=>{
+  socket.emit("join-room", room, (message) => {
     displayMessage(message);
   });
 });
