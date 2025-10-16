@@ -44,7 +44,7 @@ io.on("connection", (socket) => {
   });
   socket.on('join-room', (room, cb)=>{
     socket.join(room);
-    cb(`You've joined to room ${room}`);
+    cb(`You've joined to room '${room}'`);
   });
 
 });
