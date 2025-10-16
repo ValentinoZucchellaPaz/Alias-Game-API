@@ -4,7 +4,7 @@ const roomInput = document.getElementById("room-input");
 const form = document.getElementById("form");
 
 const socket = io("http://localhost:4000");
-const adminSocket = io("http://localhost:4000/admin");
+const adminSocket = io("http://localhost:4000/admin", { auth: { token:'test'   }  }  );
 
 socket.on("connect", () => {
   displayMessage(`You've connected with id: ${socket.id}`);
