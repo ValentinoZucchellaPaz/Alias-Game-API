@@ -2,8 +2,9 @@ const joinRoomButton = document.getElementById("room-button");
 const messageInput = document.getElementById("message-input");
 const roomInput = document.getElementById("room-input");
 const form = document.getElementById("form");
-const joinRedButton = document.getElementById("join-red-button");
-const joinBlueButton = document.getElementById("join-blue-button");
+const joinRedButton = document.getElementById('join-red-button');
+const joinBlueButton = document.getElementById('join-blue-button');
+
 
 const socket = io("http://localhost:4000");
 
@@ -26,19 +27,20 @@ adminSocket.on("connect_error", (error) => {
   displayMessage(error);
 });
 
-joinRedButton.addEventListener("click", () => {
+
+joinRedButton.addEventListener('click', () => {
   const room = roomInput.value;
-  userSocket.emit("join-team", { room, team: "red" }, (response) => {
+  userSocket.emit("join-team", {room,team:"red"}, (response) => {
     displayMessage(response);
   });
 });
 
-joinBlueButton.addEventListener("click", () => {
+joinBlueButton.addEventListener('click', () => {
   const room = roomInput.value;
-  userSocket.emit("join-team", { room, team: "blue" }, (response) => {
+  userSocket.emit('join-team', {room, team:"blue"}, (response) => {
     displayMessage(response);
-  });
-});
+  })
+})
 
 //actions taken when submitting form (message sending)
 form.addEventListener("submit", (e) => {
