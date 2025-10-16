@@ -30,16 +30,20 @@ server.listen(SVPORT, () => {
 });
 
 io.on("connection", (socket) => {
+
   console.log(socket.id);
-  socket.on("send-message", (message,room) => { //new room parameter
+
+  socket.on("send-message", (message,room) => {
     console.log(message);
-    //--new
     if (room===''){
       socket.broadcast.emit("receive-message", message);
     }
     else{
       socket.to(room).emit("receive-message", message);
     }
-    //--new
   });
+  socket.on('join-room', (room)=>{
+    socket.join(room);
+  });
+
 });
