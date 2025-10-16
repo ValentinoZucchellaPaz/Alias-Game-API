@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  alias_db:
+    image: postgres:16
+    container_name: postgres_alias_db
+    restart: always
+    environment:
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: alias_db
+    ports:
+      - "5433:5432"
+# Nota: se expone el puerto 5433 en el host en lugar del 5432
+# porque en algunos entornos de desarrollo puede estar corriendo una
+# instancia local de PostgreSQL fuera de Docker (por ejemplo, instalada por el sistema).
+
+# Docker sigue usando el puerto interno 5432 dentro del contenedor (el estándar de PostgreSQL),
+# pero se mapea al 5433 en la máquina host para evitar conflictos.
+
+# en .env DB_PORT=5433
+
+# proximamente
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     networks:
+#       - alias_network
+
+# networks:
+#   alias_network:
+#     driver: bridge
+
+# volumes:
+#   postgres_data:

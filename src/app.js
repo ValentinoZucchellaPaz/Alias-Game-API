@@ -5,6 +5,7 @@ import express from "express";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import authRoutes from "./routes/auth.routes.js";
 
+// dotenv.config();
 const app = express();
 
 // middlewares

@@ -2,6 +2,8 @@ import { ZodError } from "zod";
 import { AppError, ValidationError } from "../utils/errors.js";
 
 export function errorHandler(err, req, res, _next) {
+  // console.error(err); // debug errors
+
   // ------------------------
   // Zod validation errors
   // ------------------------
