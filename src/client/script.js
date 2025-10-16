@@ -6,7 +6,7 @@ const form = document.getElementById("form");
 const socket = io("http://localhost:4000");
 
 // const adminSocket = io("http://localhost:4000/admin"); //will throw error
-const adminSocket = io("http://localhost:4000/admin", { auth: { token:'test'   }  }  ); //will not throw
+const adminSocket = io("http://localhost:4000/admin", { auth: { token: "test" } }); //will not throw
 
 socket.on("connect", () => {
   displayMessage(`You've connected with id: ${socket.id}`);
@@ -15,9 +15,9 @@ socket.on("connect", () => {
 socket.on("receive-message", (message) => {
   displayMessage(message);
 });
-adminSocket.on('connect_error', (error) => {
+adminSocket.on("connect_error", (error) => {
   displayMessage(error);
-})
+});
 //actions taken when submitting form
 form.addEventListener("submit", (e) => {
   e.preventDefault();
