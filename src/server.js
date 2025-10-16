@@ -22,8 +22,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const socketApp= express();
 const SVPORT = process.env.SVPORT || 4000;
 
-//Serve static files from /public
-socketApp.use(express.static(path.join(__dirname, "public")));
+//Serve static files from /client
+socketApp.use(express.static(path.join(__dirname, "client")));
 
 const server = http.createServer(socketApp);
 const io = new Server(server);
