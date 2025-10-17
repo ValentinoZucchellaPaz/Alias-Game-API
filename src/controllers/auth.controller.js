@@ -1,6 +1,5 @@
 import { UserLoginRequest, UserRegisterRequest } from "../schemas/user.schema.js";
 import authService from "../services/auth.service.js";
-import { AuthError } from "../utils/errors.js";
 
 export async function registerUser(req, res, next) {
   const { name, email, password, role } = UserRegisterRequest.parse(req.body);
@@ -26,13 +25,10 @@ export const login = async (req, res) => {
 };
 
 export const refreshToken = async (req, res) => {
-  const token = req.cookies.refreshToken;
-  if (!token) throw new AuthError("No refresh token provided");
+  const refreshToken = req.refreshToken;
 
   // validate refresh and get new tokens
-  // TODO: ¿dónde se guarda el refresh?
-  const tokens = await authService.validateAndRotateToken(token);
-  if (!tokens) throw new AuthError("Invalid or expired refresh token");
+  const tokens = await authService.validateAndRotateToken(refreshToken);
 
   // return access token (body) & cookie w refresh
   res.cookie("refreshToken", tokens.refreshToken, {
@@ -42,16 +38,13 @@ export const refreshToken = async (req, res) => {
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
 
-  res.json(tokens.accessToken);
+  res.status(200).json({ status: "success", accessToken: tokens.accessToken });
 };
 
 export const logout = async (req, res) => {
-  const token = req.cookies.refreshToken;
+  const user = req.user;
 
-  if (token) {
-    // delete from DB
-    await authService.revokeRefreshToken(token);
-  }
+  await authService.logout(user.id);
 
   // clear cookie
   res.clearCookie("refreshToken", {
