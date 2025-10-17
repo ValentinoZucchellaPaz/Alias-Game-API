@@ -20,12 +20,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 })();
 
 //FOR WEB SOCKETS
-const socketApp = express();
+const socketApp = express(); //serves frontend
 socketApp.use(express.static(path.join(__dirname, "client"))); //Serve static files from /client
 
-const server = http.createServer(socketApp);
-server.listen(SVPORT, () => {
-  console.log("WebSocket server on http://localhost:" + SVPORT);
-});
+const server = http.createServer(socketApp); //creates http server from socketApp express app
+
+(async () => {
+  //Initializes websocket server on SVPORT
+  server.listen(SVPORT, () => {
+    console.log("WebSocket server on http://localhost:" + SVPORT);
+  });
+})();
+
+//creates a socket.io server instance based on 'server' server reference.
 const io = new Server(server);
+
+//calls namespaces router
 setupNamespaces(io);
