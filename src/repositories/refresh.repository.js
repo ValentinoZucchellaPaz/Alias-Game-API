@@ -9,7 +9,7 @@ async function exists(userId, token) {
   return storedToken === token;
 }
 
-async function revoke(userId, token) {
+async function revoke(userId, _token) {
   await redisClient.del(userId);
 }
 

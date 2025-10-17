@@ -1,7 +1,7 @@
 import { UserLoginRequest, UserRegisterRequest } from "../schemas/user.schema.js";
 import authService from "../services/auth.service.js";
 
-export async function registerUser(req, res, next) {
+export async function registerUser(req, res, _next) {
   const { name, email, password, role } = UserRegisterRequest.parse(req.body);
 
   // Create user in DB
