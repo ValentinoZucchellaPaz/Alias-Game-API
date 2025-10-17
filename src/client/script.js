@@ -5,11 +5,12 @@ const form = document.getElementById("form");
 const joinRedButton = document.getElementById("join-red-button");
 const joinBlueButton = document.getElementById("join-blue-button");
 
+//CONNECTION TO MULTIPLE NAMESPACES
 const socket = io("http://localhost:4000");
-
 // const adminSocket = io("http://localhost:4000/admin"); //will throw error
 const adminSocket = io("http://localhost:4000/admin", { auth: { token: "test" } }); //will not throw
 const userSocket = io("http://localhost:4000/user");
+//---
 
 userSocket.on("connect", () => {
   displayMessage(`Connected to /user namespace with id: ${userSocket.id}`);
