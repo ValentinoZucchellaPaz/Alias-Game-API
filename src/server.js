@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
 import { setupNamespaces } from "./sockets/index.js";
+import { redisClient } from "./config/redis.js";
 
 const PORT = process.env.PORT || 3000;
 const SVPORT = process.env.SVPORT || 4000;
@@ -15,6 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 //for REST API
 (async () => {
   await syncDB();
+  await redisClient.connectRedis();
 
   app.listen(PORT, () => console.log(`Server running on port http://localhost:${PORT}`));
 })();

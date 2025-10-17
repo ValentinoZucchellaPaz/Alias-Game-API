@@ -2,7 +2,8 @@ import userRepository from "../repositories/user.repository.js";
 import bcrypt from "bcrypt";
 import { UserRegisterResponse } from "../schemas/user.schema.js";
 import { ConflictError, AuthError } from "../utils/errors.js";
-import { generateAccessToken, generateRefreshToken } from "../utils/jwt.js";
+import jwt from "../utils/jwt.js";
+import refreshRepository from "../repositories/refresh.repository.js";
 
 async function register({ email, name, password }) {
   const existingUser = await userRepository.findByEmail(email);
@@ -33,8 +34,10 @@ async function login({ email, password }) {
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) throw new AuthError("Invalid credentials");
 
-  const accessToken = generateAccessToken(user.id, user.name, user.role);
-  const refreshToken = generateRefreshToken(user.id, user.name, user.role);
+  const accessToken = jwt.generateAccessToken(user.id, user.name, user.role);
+  const refreshToken = jwt.generateRefreshToken(user.id, user.name, user.role);
+
+  await refreshRepository.save(user.id, refreshToken);
 
   return { accessToken, refreshToken };
 }
@@ -44,10 +47,23 @@ async function getUserByEmail(email) {
   return user ? user.email : null;
 }
 
-async function revokeRefreshToken() {}
-
-async function validateAndRotateToken(token) {
-  return { accessToken: generateAccessToken(), refreshToken: generateRefreshToken() };
+async function logout(userId) {
+  await refreshRepository.revoke(userId);
 }
 
-export default { register, login, revokeRefreshToken, validateAndRotateToken, getUserByEmail };
+async function validateAndRotateToken(token) {
+  const payload = jwt.verifyRefreshToken({ token });
+  if (!payload) throw new Error("Invalid or expired refresh token");
+
+  const exists = await refreshRepository.exists(payload.id, token);
+  if (!exists) throw new Error("Invalid refresh token");
+
+  const accessToken = jwt.generateAccessToken(payload.id, payload.name, payload.role);
+  const refreshToken = jwt.generateRefreshToken(payload.id, payload.name, payload.role);
+
+  await refreshRepository.save(payload.id, refreshToken);
+
+  return { accessToken, refreshToken };
+}
+
+export default { register, login, logout, validateAndRotateToken, getUserByEmail };
