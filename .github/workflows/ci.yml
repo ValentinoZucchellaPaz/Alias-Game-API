@@ -2,7 +2,7 @@ name: CI - Run Tests
 
 on:
   push:
-    branches: [main, dev, vzp/tests+CI]
+    branches: [main, dev, vzp/tests-CI]
   pull_request:
     branches: [main, dev]
 
