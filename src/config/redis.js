@@ -28,11 +28,23 @@ class Redis {
     return `${this.prefix}${key}`;
   }
 
-  async connectRedis() {
-    if (!this.connected) {
-      await this.client.connect();
+  // new implementation to avoid unresolved promise (client connection) if redis not available
+  async connectRedis(timeoutMs = 2000) {
+    if (this.connected) return;
+
+    const connectPromise = this.client.connect();
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Redis connection timeout")), timeoutMs)
+    );
+
+    try {
+      await Promise.race([connectPromise, timeoutPromise]);
       this.connected = true;
       console.log("✅ Connected to Redis");
+    } catch (err) {
+      console.error("❌ Redis connection failed:", err.message);
+      throw err;
     }
   }
 
@@ -56,7 +68,7 @@ class Redis {
 
   async disconnect() {
     if (this.connected) {
-      await this.client.disconnect();
+      this.client.destroy(); // recomendacion del ide xq disconnect está deprecado
       this.connected = false;
       console.log("Redis disconnected!");
     }

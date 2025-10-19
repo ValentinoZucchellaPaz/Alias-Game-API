@@ -12,7 +12,5 @@ export default async function seedAdmin() {
       role: "admin",
     });
     console.log("🧑‍💼 Admin user created.");
-  } else {
-    console.log("👀 Admin user already exists, none created.");
   }
 }
