@@ -12,7 +12,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16-alpine
         env:
           POSTGRES_USER: dbuser
           POSTGRES_PASSWORD: password
@@ -27,7 +27,7 @@ jobs:
           --health-retries=5
 
       redis:
-        image: redis:7
+        image: redis:7-alpine
         ports:
           - 6379:6379
         options: >-
@@ -44,7 +44,7 @@ jobs:
       DB_USER: dbuser
       DB_PASSWORD: password
       DB_NAME: testdb
-      DB_PORT: 5433
+      DB_PORT: 5432
       ACCESS_TOKEN_SECRET: una_clave_larga_y_secreta
       REFRESH_TOKEN_SECRET: otra_clave_tambien_secreta
       ACCESS_TOKEN_EXP: 15m
