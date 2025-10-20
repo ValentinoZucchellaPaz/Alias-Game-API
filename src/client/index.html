@@ -5,37 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="script.js" type="module"></script>
-    <style>
-      body {
-        margin: 0 auto;
-        display: flex;
-        justify-content: center;
-        flex-direction: column;
-        height: 100vh;
-        width: 90%;
-        max-width: 1200px;
-      }
-      #message-container {
-        border: 1px solid black;
-        flex-grow: 1;
-        overflow-y: auto;
-      }
-      #message-container div {
-        background-color: #ccc;
-        padding: 5px;
-      }
-      #message-container div:nth-child(odd) {
-        background-color: #eee;
-      }
-      .form-field-container {
-        display: flex;
-        align-items: center;
-        margin-top: 10px;
-        gap: 10px;
-        margin-bottom: 10px;
-        justify-content: flex-end;
-      }
-    </style>
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <aside id="team-status">
