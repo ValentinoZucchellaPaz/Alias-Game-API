@@ -1,13 +1,32 @@
 /* styles.css */
 
+header {
+  text-align: center;
+  margin-top: 10px;
+}
+
 body {
   margin: 0 auto;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   flex-direction: column;
   height: 100vh;
   width: 90%;
   max-width: 1200px;
+}
+
+.game-info{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.scores{
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
 }
 
 #message-container {
@@ -32,4 +51,8 @@ body {
   gap: 10px;
   margin-bottom: 10px;
   justify-content: flex-end;
+}
+
+.team-buttons-container {
+  justify-self: center;
 }
