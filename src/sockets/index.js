@@ -1,8 +1,6 @@
 // src/sockets/index.js
 
-import setupAdminNamespace from "./admin.js";
 import setupDefaultNamespace from "./default.js";
-import setupUserNamespace from "./user.js";
 
 /**
  * Initialize the application's Socket.IO namespaces.
@@ -15,7 +13,5 @@ import setupUserNamespace from "./user.js";
  * @returns {void}
  */
 export function setupNamespaces(io) {
-  setupAdminNamespace(io);
   setupDefaultNamespace(io);
-  setupUserNamespace(io);
 }
