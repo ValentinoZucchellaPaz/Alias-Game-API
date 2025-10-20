@@ -40,6 +40,17 @@ export default function setupDefaultNamespace(io) {
       teamSet.add(socket.id);
       socket.join(room);
       cb(`You joined the ${team} team in room '${room}'`);
+      emitTeamState(io,room);
     });
   });
+}
+
+
+
+
+
+function emitTeamState(io, room) {
+  const red = Array.from(rooms[room]?.red || []);
+  const blue = Array.from(rooms[room]?.blue || []);
+  io.to(room).emit("team-state", { red, blue });
 }
