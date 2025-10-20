@@ -1,59 +1,70 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="script.js" type="module"></script>
     <style>
-        body {
-            margin: 0 auto;
-            display: flex;
-            justify-content: center;
-            flex-direction: column;
-            height: 100vh;
-            width: 90%;
-            max-width: 1200px;
-        }
-        #message-container{
-            border: 1px solid black;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-        #message-container div{
-            background-color: #CCC;
-            padding: 5px;
-        }
-        #message-container div:nth-child(odd){
-            background-color: #EEE;
-        }
-        .form-field-container{
-            display: flex;
-            align-items: center;
-            margin-top: 10px;
-            gap: 10px;
-            margin-bottom: 10px;
-            justify-content: flex-end;
-        }
+      body {
+        margin: 0 auto;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        height: 100vh;
+        width: 90%;
+        max-width: 1200px;
+      }
+      #message-container {
+        border: 1px solid black;
+        flex-grow: 1;
+        overflow-y: auto;
+      }
+      #message-container div {
+        background-color: #ccc;
+        padding: 5px;
+      }
+      #message-container div:nth-child(odd) {
+        background-color: #eee;
+      }
+      .form-field-container {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+        gap: 10px;
+        margin-bottom: 10px;
+        justify-content: flex-end;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <aside id="team-status">
+      <h3>Team Status</h3>
+      <div>
+        <h4>Red Team</h4>
+        <div id="red-team-list"></div>
+      </div>
+      <div>
+        <h4>Blue Team</h4>
+        <div id="blue-team-list"></div>
+      </div>
+    </aside>
     <div id="message-container"></div>
     <div class="team-buttons-container">
-        <button id="join-red-button">Join Red Team</button>
-        <button id="join-blue-button">Join Blue Team</button>
+      <button id="join-red-button">Join Red Team</button>
+      <button id="join-blue-button">Join Blue Team</button>
     </div>
     <form action="" id="form">
-        <div class="form-field-container">
-            <label for="message-input">Message</label>
-            <input type="text" id="message-input">
-            <button id="send-button">Send</button>
-        </div>
-        <div class="form-field-container">
-            <label for="room-input">Room</label>
-            <input type="text" id="room-input">
-            <button id="room-button">Join</button>
-        </div>
+      <div class="form-field-container">
+        <label for="message-input">Message</label>
+        <input type="text" id="message-input" />
+        <button id="send-button">Send</button>
+      </div>
+      <div class="form-field-container">
+        <label for="room-input">Room</label>
+        <input type="text" id="room-input" />
+        <button id="room-button">Join</button>
+      </div>
     </form>
-</body>
+  </body>
 </html>
