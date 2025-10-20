@@ -10,6 +10,8 @@ const leaveRoomButton = document.getElementById('leave-room');
 const socket = io("http://localhost:4000");
 //---
 
+let currentRoom = null;
+
 // on connection of a socket
 socket.on("connect", () => {
   displayMessage(`You've connected with id: ${socket.id}`);
@@ -22,16 +24,21 @@ socket.on("receive-message", (message) => {
 
 //join red team
 joinRedButton.addEventListener("click", () => {
-  const room = roomInput.value;
-  socket.emit("join-team", { room, team: "red" }, (response) => {
+  if (!currentRoom) return;
+  socket.emit("join-team", { room:currentRoom, team: "red" }, (response) => {
     displayMessage(response);
   });
 });
 
 //join blue team
 joinBlueButton.addEventListener("click", () => {
-  const room = roomInput.value;
-  socket.emit("join-team", { room, team: "blue" }, (response) => {
+  if (!currentRoom) {
+      console.log('!currentRoom')
+    return;}
+    else{
+      console.log('joining blue team in room',currentRoom)
+    }
+  socket.emit("join-team", { room:currentRoom, team: "blue" }, (response) => {
     displayMessage(response);
   });
 });
@@ -57,6 +64,7 @@ joinRoomButton.addEventListener("click", (e) => {
   socket.emit("join-room", room, (message) => {
     displayMessage(message);
     document.getElementById('room-name').textContent= room;
+    currentRoom= room;
   });
 });
 
@@ -71,6 +79,7 @@ leaveRoomButton.addEventListener('click', () => {
     document.getElementById('red-team-list').innerHTML='';
     document.getElementById('blue-team-list').innerHTML='';
     displayMessage(`You have left room ${room}`);
+    currentRoom = null;
   });
 });
 
