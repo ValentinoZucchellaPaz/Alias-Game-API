@@ -1,6 +1,12 @@
 //FOR API REST
 import app from "./app.js";
 import { syncDB } from "./models/sequelize/index.js";
+import http from "http";
+import express from "express";
+import { Server } from "socket.io";
+import path from "path";
+import { fileURLToPath } from "url";
+import { setupNamespaces } from "./sockets/index.js";
 import { redisClient } from "./config/redis.js";
 
 const PORT = process.env.PORT || 3000;
