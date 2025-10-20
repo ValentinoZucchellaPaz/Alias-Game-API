@@ -1,4 +1,8 @@
 //src/sockets/default.js
+const rooms = {};
+const roomHosts = {};
+const MAX_TEAM_SIZE = 5;
+const MIN_TEAM_SIZE = 2;
 
 export default function setupDefaultNamespace(io) {
   io.on("connection", (socket) => {
@@ -15,6 +19,11 @@ export default function setupDefaultNamespace(io) {
     //join room event
     socket.on("join-room", (room, cb) => {
       socket.join(room);
+      //If there is no host, the socket becomes the host
+      if (!roomHosts[room]){
+        roomHosts[room] = socket.id;
+        socket.emit('host-assigned', {room});
+      };
       cb(`You've joined to room '${room}'`);
     });
 
