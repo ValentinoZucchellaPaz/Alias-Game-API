@@ -69,4 +69,24 @@ function displayMessage(message) {
   document.getElementById("message-container").append(div);
 }
 
+socket.on("team-state", ({ red, blue }) => {
+  updateTeamList("red", red);
+  updateTeamList("blue", blue);
+});
+
+
+
+
+
+
+function updateTeamList(team, players) {
+  const container = document.getElementById(`${team}-team-list`);
+  container.innerHTML = ""; // limpiar
+  players.forEach((id) => {
+    const div = document.createElement("div");
+    div.textContent = id;
+    container.appendChild(div);
+  });
+}
+
 
