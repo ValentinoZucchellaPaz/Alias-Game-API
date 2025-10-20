@@ -27,6 +27,20 @@ export default function setupDefaultNamespace(io) {
       cb(`You've joined to room '${room}'`);
     });
 
+    socket.on('leave-room', (room,cb) => {
+      socket.leave(room);
+
+      //Delete team if required
+      if (rooms[room] ){
+        rooms[room].red.delete(socket.id);
+        rooms[room].blue.delete(socket.id);
+      }
+      emitTeamState(io, room);
+      cb(`You've left room ${room}`);
+    })
+
+
+
     //join team event
     socket.on("join-team", ({ room, team }, cb) => {
       if (!rooms[room]) {
