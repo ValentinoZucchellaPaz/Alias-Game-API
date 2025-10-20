@@ -54,6 +54,7 @@ joinRoomButton.addEventListener("click", (e) => {
   const room = roomInput.value;
   socket.emit("join-room", room, (message) => {
     displayMessage(message);
+    document.getElementById('room-name').textContent= room;
   });
 });
 
