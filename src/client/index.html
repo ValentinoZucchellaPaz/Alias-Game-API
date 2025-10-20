@@ -7,34 +7,46 @@
     <script src="script.js" type="module"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
+  <header>
+    Room: <span id="room-name">None</span>
+  </header>
   <body>
-    <aside id="team-status">
-      <h3>Team Status</h3>
-      <div>
-        <h4>Red Team</h4>
-        <div id="red-team-list"></div>
+    <div class="game-info">
+      <div id="team-status">
+        <h3>Team Status</h3>
+        <div>
+          <h4>Red Team</h4>
+          <div id="red-team-list"></div>
+        </div>
+        <div>
+          <h4>Blue Team</h4>
+          <div id="blue-team-list"></div>
+        </div>
       </div>
-      <div>
-        <h4>Blue Team</h4>
-        <div id="blue-team-list"></div>
+      <div class="scores">
+        <span id="red-score">Red Team Score: 0</span>
+        <span id="blue-score">Blue Team Score: 0</span>
       </div>
-    </aside>
-    <div id="message-container"></div>
-    <div class="team-buttons-container">
-      <button id="join-red-button">Join Red Team</button>
-      <button id="join-blue-button">Join Blue Team</button>
     </div>
-    <form action="" id="form">
-      <div class="form-field-container">
-        <label for="message-input">Message</label>
-        <input type="text" id="message-input" />
-        <button id="send-button">Send</button>
+
+    <div id="message-container"></div>
+    <div class="inputs-container">
+      <div class="team-buttons-container">
+        <button id="join-red-button">Join Red Team</button>
+        <button id="join-blue-button">Join Blue Team</button>
       </div>
-      <div class="form-field-container">
-        <label for="room-input">Room</label>
-        <input type="text" id="room-input" />
-        <button id="room-button">Join</button>
-      </div>
-    </form>
+      <form action="" id="form">
+        <div class="form-field-container">
+          <label for="message-input">Message</label>
+          <input type="text" id="message-input" />
+          <button id="send-button">Send</button>
+        </div>
+        <div class="form-field-container">
+          <label for="room-input">Room</label>
+          <input type="text" id="room-input" />
+          <button id="room-button">Join</button>
+        </div>
+      </form>
+    </div>
   </body>
 </html>
