@@ -1,24 +1,39 @@
 /* styles.css */
 
-header {
-  text-align: center;
-  margin-top: 10px;
-  width: 100%;
+* {
+  padding: 0%;
+  margin: 0%;
 }
 
 body {
   margin: 0 auto;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
+  align-items: stretch;
   flex-direction: column;
   height: 100vh;
   width: 90%;
   max-width: 1200px;
 }
 
+
+header {
+  text-align: center;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.container{
+  display: flex;
+  flex-direction: row;
+  height: 90vh;
+  gap: 10px;
+}
+
 .game-info{
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
   align-items: center;
   margin-top: 10px;
@@ -26,6 +41,7 @@ body {
 
 .scores{
   display: flex;
+  flex-direction: column;
   gap: 15px;
   flex-wrap: wrap;
 }
@@ -33,7 +49,8 @@ body {
 #message-container {
   border: 1px solid black;
   flex-grow: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
+  max-height: 70vh
 }
 
 #message-container div {
@@ -45,10 +62,19 @@ body {
   background-color: #eee;
 }
 
+.inputs-container {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
 .form-field-container {
   display: flex;
   align-items: center;
-  margin-top: 10px;
+  /* margin-top: 10px; */
   gap: 10px;
   margin-bottom: 10px;
   justify-content: flex-end;
@@ -59,7 +85,47 @@ body {
 }
 
 #quit{
-  margin-left: 10px;
   margin-bottom: 10px;
-  right: 0;
+  margin: auto;
+}
+
+
+/* media query for less or equal than 270px */
+@media (max-width: 270px) {
+  .body{
+    height: 100%;
+  }
+  .container{
+    flex-direction: column;
+    height: 100%;
+  }
+  .game-info{
+    flex-direction: row;
+    justify-content: space-around;
+    margin-top: 0px;
+  }
+  .message-container{
+    max-height: 35vh;
+  }
+  .inputs-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .team-buttons-container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    align-items: center;
+  }
+  .form-field-container{
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+  }
+  #room-button{
+    margin-bottom: 10px;
+  }
+  #leave-room{
+    width: 100%;
+  }
 }
