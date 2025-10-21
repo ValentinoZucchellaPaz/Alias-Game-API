@@ -18,8 +18,8 @@ socket.on("connect", () => {
 });
 
 //receive message
-socket.on("receive-message", (message) => {
-  displayMessage(message);
+socket.on("receive-message", ({message,sender}) => {
+  displayMessage(`${sender}: ${message}`);
 });
 
 //join red team event triggering
@@ -46,8 +46,8 @@ form.addEventListener("submit", (e) => {
 
   if (message === "") return;
 
-  displayMessage(message);
-  socket.emit("send-message", message, room);
+  displayMessage(`You: ${message}`);
+  socket.emit("send-message", {message, room, sender:socket.id});
 
   messageInput.value = "";
 });
