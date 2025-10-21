@@ -90,9 +90,10 @@ socket.on('host-assigned', ({room})=>{
 
 
 //update teams' information
-socket.on("team-state", ({ red, blue }) => {
+socket.on("team-state", ({ red, blue, unassigned }) => {
   updateTeamList("red", red);
   updateTeamList("blue", blue);
+  updateTeamList('no-team', unassigned);
 });
 
 //info display method
@@ -104,7 +105,12 @@ function displayMessage(message) {
 
 function updateTeamList(team, players) {
   const container = document.getElementById(`${team}-team-list`);
-  container.innerHTML = ""; // limpiar
+  if (!container || !Array.isArray(players)) {
+    console.warn(`Invalid team list for '${team}'`);
+    return;
+  }
+
+  container.innerHTML = "";
   players.forEach((id) => {
     const div = document.createElement("div");
     div.textContent = id;
