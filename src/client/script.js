@@ -1,10 +1,10 @@
-const joinRoomButton = document.getElementById("room-button");
+const form = document.getElementById("form");
 const messageInput = document.getElementById("message-input");
 const roomInput = document.getElementById("room-input");
-const form = document.getElementById("form");
+const joinRoomButton = document.getElementById("room-button");
 const joinRedButton = document.getElementById("join-red-button");
 const joinBlueButton = document.getElementById("join-blue-button");
-const leaveRoomButton = document.getElementById('leave-room');
+const leaveRoomButton = document.getElementById("leave-room");
 
 //CONNECTION TO MULTIPLE NAMESPACES
 const socket = io("http://localhost:4000");
@@ -22,23 +22,18 @@ socket.on("receive-message", (message) => {
   displayMessage(message);
 });
 
-//join red team
+//join red team event triggering
 joinRedButton.addEventListener("click", () => {
   if (!currentRoom) return;
-  socket.emit("join-team", { room:currentRoom, team: "red" }, (response) => {
+  socket.emit("join-team", { room: currentRoom, team: "red" }, (response) => {
     displayMessage(response);
   });
 });
 
-//join blue team
+//join blue team event triggering
 joinBlueButton.addEventListener("click", () => {
-  if (!currentRoom) {
-      console.log('!currentRoom')
-    return;}
-    else{
-      console.log('joining blue team in room',currentRoom)
-    }
-  socket.emit("join-team", { room:currentRoom, team: "blue" }, (response) => {
+  if (!currentRoom) return;
+  socket.emit("join-team", { room: currentRoom, team: "blue" }, (response) => {
     displayMessage(response);
   });
 });
@@ -60,40 +55,39 @@ form.addEventListener("submit", (e) => {
 //join room
 joinRoomButton.addEventListener("click", (e) => {
   const room = roomInput.value;
-  console.log('trying to join', room)
+  // if !room || room.trim === "" return
   socket.emit("join-room", room, (message) => {
     displayMessage(message);
-    document.getElementById('room-name').textContent= room;
-    currentRoom= room;
+    document.getElementById("room-name").textContent = room; //display room name
+    currentRoom = room;
   });
 });
 
 //leave room
-leaveRoomButton.addEventListener('click', () => {
+leaveRoomButton.addEventListener("click", () => {
   const room = roomInput.value;
   if (!room) return;
-  socket.emit('leave-room', room, ()=>{
+  socket.emit("leave-room", room, () => {
     //clean interface
-    document.getElementById('room-name').textContent = 'None';
-    document.getElementById('message-container').innerHTML='';
-    document.getElementById('red-team-list').innerHTML='';
-    document.getElementById('blue-team-list').innerHTML='';
+    document.getElementById("room-name").textContent = "None";
+    document.getElementById("message-container").innerHTML = "";
+    document.getElementById("red-team-list").innerHTML = "";
+    document.getElementById("blue-team-list").innerHTML = "";
     displayMessage(`You have left room ${room}`);
     currentRoom = null;
   });
 });
 
 //host assignation
-socket.on('host-assigned', ({room})=>{
+socket.on("host-assigned", ({ room }) => {
   displayMessage(`You are now the host of room ${room}`);
-})
-
+});
 
 //update teams' information
 socket.on("team-state", ({ red, blue, unassigned }) => {
   updateTeamList("red", red);
   updateTeamList("blue", blue);
-  updateTeamList('no-team', unassigned);
+  updateTeamList("no-team", unassigned);
 });
 
 //info display method
@@ -103,22 +97,22 @@ function displayMessage(message) {
   document.getElementById("message-container").append(div);
 }
 
-function updateTeamList(team,players){
-  const container = team === 'no-team'
-    ? document.querySelector(".no-team-list")
-    : document.getElementById(`${team}-team-list`);
+function updateTeamList(team, players) {
+  const container =
+    team === "no-team"
+      ? document.querySelector(".no-team-list")
+      : document.getElementById(`${team}-team-list`);
 
-    if (!container || !Array.isArray(players)){
-      console.warn(`Invalid team list for '${team}'`);
-      return;
-    }
-
-    container.innerHTML = "";
-    players.forEach((id) => {
-      const div = document.createElement('div');
-      div.textContent= id;
-      container.appendChild(div);
-    });
+  if (!container || !Array.isArray(players)) {
+    console.warn(`Invalid team list for '${team}'`);
+    return;
+  }
+  
+  //fill container with players
+  container.innerHTML = "";
+  players.forEach((id) => {
+    const div = document.createElement("div");
+    div.textContent = id;
+    container.appendChild(div);
+  });
 }
-
-
