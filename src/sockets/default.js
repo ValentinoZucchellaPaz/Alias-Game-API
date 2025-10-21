@@ -25,20 +25,25 @@ export default function setupDefaultNamespace(io) {
       if (roomSize >= MAX_ROOM_SIZE) return cb(`Room is full`);
 
       socket.join(room);
+
+      if (!rooms[room]) {
+        rooms[room] = { red: new Set(), blue: new Set() };
+      }
+
+      setTimeout(() => {
+        emitTeamState(io, room);
+      }, 50);
+
       //If there is no host, the socket becomes the host
       if (!roomHosts[room]) {
         roomHosts[room] = socket.id;
         socket.emit("host-assigned", { room });
       }
 
-      // if room was deleted, recreate empty structure
-      if (!rooms[room]) {
-        rooms[room] = { red: new Set(), blue: new Set() };
-      }
-
       cb(`You've joined to room '${room}'`);
     });
 
+    //room leaving
     socket.on("leave-room", (room, cb) => {
       socket.leave(room);
 
@@ -81,6 +86,29 @@ export default function setupDefaultNamespace(io) {
       cb(`You joined team ${team} in room ${room}`);
       emitTeamState(io, room);
     });
+
+    socket.on("disconnect", () => {
+      for (const room in rooms){
+        rooms[room].red.delete(socket.id);
+        rooms[room].blue.delete(socket.id);
+
+        const redSize = rooms[room].red.size;
+        const blueSize = rooms[room].blue.size;
+        const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
+
+        //If there is no more people on the room, we delete it.
+        if (redSize === 0 && blueSize === 0 && roomSize === 0) {
+          delete rooms[room];
+          delete roomHosts[room];
+          console.log(`Room ${room} deleted (disconnected)`);
+        }
+        else {
+          emitTeamState(io,room);
+        }
+      }
+    })
+
+
   });
 }
 
