@@ -32,7 +32,10 @@ export default defineConfig([
     rules: {
       ...eslintConfigPrettier.rules,
       "prettier/prettier": "error",
-      "no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
     },
   },
 

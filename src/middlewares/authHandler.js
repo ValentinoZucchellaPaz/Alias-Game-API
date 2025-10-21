@@ -11,7 +11,7 @@ export async function getSession(req, res, next) {
     const payload = jwt.verifyAccessToken({ token });
     if (!payload) throw new AuthError("Invalid or expired token");
 
-    const { exp, iat, ...userData } = payload;
+    const { _exp, _iat, ...userData } = payload;
     req.user = userData;
     next();
   } catch (error) {
