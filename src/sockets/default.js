@@ -98,6 +98,13 @@ export default function setupDefaultNamespace(io) {
     });
 
 
+    socket.on('start-game', ({room}) => {
+      if (roomHosts[room] !== socket.id) return;
+
+      io.to(room).emit('game-started');
+    })
+
+
   });
 }
 

@@ -79,6 +79,7 @@ leaveRoomButton.addEventListener("click", () => {
 //host assignation
 socket.on("host-assigned", ({ room }) => {
   displayMessage(`You are now the host of room ${room}`);
+  document.getElementById("start-game-button").style.display = 'inline-block';
 });
 
 //update teams' information
@@ -86,6 +87,10 @@ socket.on("team-state", ({ red, blue, unassigned }) => {
   updateTeamList("red", red);
   updateTeamList("blue", blue);
   updateTeamList("no-team", unassigned);
+});
+
+socket.on('game-started', () => {
+  displayMessage('Game has started!');
 });
 
 //info display method
@@ -121,4 +126,11 @@ function resetRoomUI(){
   document.getElementById('red-team-list').innerHTML = "";
   document.getElementById('blue-team-list').innerHTML="";
   document.querySelector('.no-team-list').innerHTML='';
+  document.getElementById('start-game-button').style.display='none';
 }
+
+
+document.getElementById('start-game-button').addEventListener('click', () => {
+  if (!currentRoom) return;
+  socket.emit('start-game', {room:currentRoom});
+})
