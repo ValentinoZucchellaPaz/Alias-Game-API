@@ -22,7 +22,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 })();
 
 //FOR WEB SOCKETS
-const socketApp = express(); //serves frontend
+const socketApp = express(); 
 socketApp.use(express.static(path.join(__dirname, "client"))); //Serve static files from /client
 
 const server = http.createServer(socketApp); //creates http server from socketApp express app
