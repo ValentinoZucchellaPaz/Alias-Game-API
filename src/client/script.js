@@ -46,8 +46,9 @@ form.addEventListener("submit", (e) => {
 
   if (message === "") return;
 
-  displayMessage(`You: ${message}`);
+  if (!currentRoom ) return;
   socket.emit("send-message", {message, room, sender:socket.id});
+  displayMessage(`You: ${message}`);
 
   messageInput.value = "";
 });
