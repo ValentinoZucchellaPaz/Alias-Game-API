@@ -69,10 +69,7 @@ leaveRoomButton.addEventListener("click", () => {
   if (!room) return;
   socket.emit("leave-room", room, () => {
     //clean interface
-    document.getElementById("room-name").textContent = "None";
-    document.getElementById("message-container").innerHTML = "";
-    document.getElementById("red-team-list").innerHTML = "";
-    document.getElementById("blue-team-list").innerHTML = "";
+    resetRoomUI();
     displayMessage(`You have left room ${room}`);
     currentRoom = null;
   });
@@ -115,4 +112,12 @@ function updateTeamList(team, players) {
     div.textContent = id;
     container.appendChild(div);
   });
+}
+
+function resetRoomUI(){
+  document.getElementById('room-name').textContent = "None";
+  document.getElementById('message-container').innerHTML="";
+  document.getElementById('red-team-list').innerHTML = "";
+  document.getElementById('blue-team-list').innerHTML="";
+  document.querySelector('.no-team-list').innerHTML='';
 }
