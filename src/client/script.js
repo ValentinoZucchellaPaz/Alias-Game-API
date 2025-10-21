@@ -101,6 +101,12 @@ socket.on('game-started', () => {
   displayMessage('Game has started!');
 });
 
+socket.on('room-closed', () => {
+  displayMessage(`Room was closed by the host.`);
+  resetRoomUI();
+})
+
+
 //info display method
 function displayMessage(message) {
   const div = document.createElement("div");

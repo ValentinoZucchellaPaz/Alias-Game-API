@@ -49,8 +49,26 @@ export default function setupDefaultNamespace(io) {
     //room leaving
     socket.on("leave-room", (room, cb) => {
       if (!room) return cb(`Invalid room`);
-      socket.leave(room);
+      const isHost = roomHosts[room] === socket.id;
+      
+      if (isHost){
+        io.to(room).emit("room-closed");
 
+        const socketsInRoom = Array.from(io.sockets.adapter.rooms.get(room) || []);
+        socketsInRoom.forEach((id) => {
+          const s = io.sockets.sockets.get(id);
+          if (s) {
+            s.leave(room);
+            rooms[room]?.red.delete(id);
+            rooms[room]?.blue.delete(id);
+          }
+        });
+        delete rooms[room];
+        delete roomHosts[room];
+        return cb(`Room ${room} closed (host left)`);
+      }
+      
+      socket.leave(room);
       //Remove from team
       if (rooms[room]) {
         rooms[room].red.delete(socket.id);
