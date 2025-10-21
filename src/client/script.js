@@ -103,19 +103,22 @@ function displayMessage(message) {
   document.getElementById("message-container").append(div);
 }
 
-function updateTeamList(team, players) {
-  const container = document.getElementById(`${team}-team-list`);
-  if (!container || !Array.isArray(players)) {
-    console.warn(`Invalid team list for '${team}'`);
-    return;
-  }
+function updateTeamList(team,players){
+  const container = team === 'no-team'
+    ? document.querySelector(".no-team-list")
+    : document.getElementById(`${team}-team-list`);
 
-  container.innerHTML = "";
-  players.forEach((id) => {
-    const div = document.createElement("div");
-    div.textContent = id;
-    container.appendChild(div);
-  });
+    if (!container || !Array.isArray(players)){
+      console.warn(`Invalid team list for '${team}'`);
+      return;
+    }
+
+    container.innerHTML = "";
+    players.forEach((id) => {
+      const div = document.createElement('div');
+      div.textContent= id;
+      container.appendChild(div);
+    });
 }
 
 
