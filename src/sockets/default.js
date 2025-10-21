@@ -9,14 +9,12 @@ const MAX_ROOM_SIZE = 10;
 
 export default function setupDefaultNamespace(io) {
   io.on("connection", (socket) => {
+
     //message send event
-    socket.on("send-message", (message, room) => {
-      if (!room || room === "") {
-        //do nothing
-        return;
-      } else {
-        socket.to(room).emit("receive-message", message); //message to users in the specified room
-      }
+    socket.on("send-message", ({message, room}, cb) => {
+      if (!room || room === "") return;
+      const payload = {message, sender: socket.id};
+      socket.to(room).emit("receive-message", payload); //message to users in the specified room
     });
 
     //join room event
