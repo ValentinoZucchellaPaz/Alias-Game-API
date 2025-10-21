@@ -46,6 +46,7 @@ export default function setupDefaultNamespace(io) {
 
     //room leaving
     socket.on("leave-room", (room, cb) => {
+      if (!room) return cb(`Invalid room`);
       socket.leave(room);
 
       //Remove from team
@@ -53,17 +54,10 @@ export default function setupDefaultNamespace(io) {
         rooms[room].red.delete(socket.id);
         rooms[room].blue.delete(socket.id);
 
-        const redSize = rooms[room].red.size;
-        const blueSize = rooms[room].blue.size;
-
-        //maybe there is  a player with no team !
-        if (redSize === 0 && blueSize == 0) {
-          delete rooms[room];
-          delete roomHosts[room];
-          console.log(`Room '${room}' deleted (empty)`);
+        if (!cleanRoomIfEmpty(io,room)){
+          emitTeamState(io, room);
         }
       }
-      emitTeamState(io, room);
       cb(`You've left room ${room}`);
     });
 
@@ -93,22 +87,11 @@ export default function setupDefaultNamespace(io) {
       for (const room in rooms){
         rooms[room].red.delete(socket.id);
         rooms[room].blue.delete(socket.id);
-
-        const redSize = rooms[room].red.size;
-        const blueSize = rooms[room].blue.size;
-        const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
-
-        //If there is no more people on the room, we delete it.
-        if (redSize === 0 && blueSize === 0 && roomSize === 0) {
-          delete rooms[room];
-          delete roomHosts[room];
-          console.log(`Room ${room} deleted (disconnected)`);
-        }
-        else {
+        if(!cleanRoomIfEmpty(io,room)){
           emitTeamState(io,room);
         }
       }
-    })
+    });
 
 
   });
@@ -127,4 +110,16 @@ function getUnassignedPlayers(io, room) {
   const red = rooms[room]?.red || new Set();
   const blue = rooms[room]?.blue || new Set();
   return allSockets.filter((id) => !red.has(id) && !blue.has(id));
+}
+
+
+function cleanRoomIfEmpty(io, room){
+  const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
+  if (roomSize === 0){
+    delete rooms[room];
+    delete roomHosts[room];
+    console.log(`Room ${room} deleted (empty room)`)
+    return true;
+  }
+  return false;
 }
