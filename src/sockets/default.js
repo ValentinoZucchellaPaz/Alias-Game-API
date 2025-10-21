@@ -1,8 +1,11 @@
+import { io } from "socket.io-client";
+
 //src/sockets/default.js
 const rooms = {};
 const roomHosts = {};
 const MAX_TEAM_SIZE = 5;
 const MIN_TEAM_SIZE = 2;
+const MAX_ROOM_SIZE = 10;
 
 export default function setupDefaultNamespace(io) {
   io.on("connection", (socket) => {
@@ -18,6 +21,9 @@ export default function setupDefaultNamespace(io) {
 
     //join room event
     socket.on("join-room", (room, cb) => {
+      const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
+      if (roomSize >= MAX_ROOM_SIZE) return cb(`Room is full`);
+
       socket.join(room);
       //If there is no host, the socket becomes the host
       if (!roomHosts[room]) {
@@ -55,9 +61,9 @@ export default function setupDefaultNamespace(io) {
     });
 
     //join team event
-    socket.on("join-team", ({room,team}, cb) => {
-      if (!rooms[room]){
-        room[room] = { red: new Set(), blue: new Set()};
+    socket.on("join-team", ({ room, team }, cb) => {
+      if (!rooms[room]) {
+        room[room] = { red: new Set(), blue: new Set() };
       }
 
       const teamSet = rooms[room][team];
@@ -65,21 +71,30 @@ export default function setupDefaultNamespace(io) {
       if (teamSet.size >= MAX_TEAM_SIZE) return cb("Team is full");
 
       //remove from opposite team
-      const otherTeam = team === 'red' ? 'blue' : 'red';
+      const otherTeam = team === "red" ? "blue" : "red";
       rooms[room][otherTeam].delete(socket.id);
 
       //add to chosen team
       teamSet.add(socket.id);
       socket.join(room);
 
-      cb(`You joined team ${team} in room ${room}`)
-      emitTeamState(io,room);
-    })
+      cb(`You joined team ${team} in room ${room}`);
+      emitTeamState(io, room);
+    });
   });
 }
 
 function emitTeamState(io, room) {
   const red = Array.from(rooms[room]?.red || []);
   const blue = Array.from(rooms[room]?.blue || []);
-  io.to(room).emit("team-state", { red, blue });
+  const unassigned = getUnassignedPlayers(io, room) || [];
+
+  io.to(room).emit("team-state", { red, blue, unassigned });
+}
+
+function getUnassignedPlayers(io, room) {
+  const allSockets = Array.from(io.sockets.adapter.rooms.get(room) || []);
+  const red = rooms[room]?.red || new Set();
+  const blue = rooms[room]?.blue || new Set();
+  return allSockets.filter((id) => !red.has(id) && !blue.has(id));
 }
