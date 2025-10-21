@@ -109,7 +109,11 @@ function getUnassignedPlayers(io, room) {
   const allSockets = Array.from(io.sockets.adapter.rooms.get(room) || []);
   const red = rooms[room]?.red || new Set();
   const blue = rooms[room]?.blue || new Set();
-  return allSockets.filter((id) => !red.has(id) && !blue.has(id));
+
+  return allSockets.filter((id) => {
+    const socketExists = io.sockets.sockets.has(id); // ← verifica que el socket siga conectado
+    return socketExists && !red.has(id) && !blue.has(id);
+  });
 }
 
 
