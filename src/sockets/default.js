@@ -77,6 +77,8 @@ export default function setupDefaultNamespace(io) {
       const otherTeam = team === "red" ? "blue" : "red";
       rooms[room][otherTeam].delete(socket.id);
 
+      if (teamSet.has(socket.id)) return cb(`You already are in team ${team}`);
+
       //add to chosen team
       teamSet.add(socket.id);
       socket.join(room);
