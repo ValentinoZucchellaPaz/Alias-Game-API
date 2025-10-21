@@ -4,6 +4,7 @@ import express from "express";
 
 import { errorHandler } from "./middlewares/errorHandler.js";
 import authRoutes from "./routes/auth.routes.js";
+import roomRoutes from "./routes/room.routes.js";
 
 // dotenv.config();
 const app = express();
@@ -15,9 +16,10 @@ app.use(cookieParser());
 // ...
 
 // routes
-app.use("/auth", authRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/rooms", roomRoutes);
 
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   res.send("Welcome to the Alias Game API");
 });
 

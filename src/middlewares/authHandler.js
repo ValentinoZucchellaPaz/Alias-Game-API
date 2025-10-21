@@ -12,7 +12,7 @@ export async function getSession(req, res, next) {
     if (!payload) throw new AuthError("Invalid or expired token");
 
     const { _exp, _iat, ...userData } = payload;
-    req.user = userData;
+    req.user = userData; // id, name, role
     next();
   } catch (error) {
     next(error);

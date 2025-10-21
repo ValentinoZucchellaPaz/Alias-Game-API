@@ -6,7 +6,7 @@ export default class Room {
     this.code = code;
     this.hostId = hostId;
     this.users = []; // Array de RoomUser
-    this.status = "waiting"; // "waiting" | "in-game"
+    this.status = "waiting"; // "waiting" | "in-game" | "finished"
     this.teams = { red: [], blue: [] };
     this.sockets = new Map(); // userId → WebSocket
   }
