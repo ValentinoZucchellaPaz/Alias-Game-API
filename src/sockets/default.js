@@ -13,6 +13,10 @@ export default function setupDefaultNamespace(io) {
     //message send event
     socket.on("send-message", ({message, room}, cb) => {
       if (!room || room === "") return;
+
+      const isInRoom = io.sockets.adapter.rooms.get(room)?.has(socket.id);
+      if (!isInRoom) return; //no emission out of rooms
+
       const payload = {message, sender: socket.id};
       socket.to(room).emit("receive-message", payload); //message to users in the specified room
     });
