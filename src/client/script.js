@@ -87,6 +87,14 @@ socket.on("team-state", ({ red, blue, unassigned }) => {
   updateTeamList("red", red);
   updateTeamList("blue", blue);
   updateTeamList("no-team", unassigned);
+
+  const startButton = document.getElementById('start-game-button');
+  const isHost = startButton.style.display !== 'none';
+  const canStart = red.length >=2 && blue.length >= 2;
+
+  if (isHost){
+    startButton.disabled = !canStart;
+  }
 });
 
 socket.on('game-started', () => {
