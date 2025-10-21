@@ -11,7 +11,7 @@ export default function setupDefaultNamespace(io) {
   io.on("connection", (socket) => {
     //message send event
     socket.on("send-message", (message, room) => {
-      if (room === "") {
+      if (!room || room === "") {
         //do nothing
         return;
       } else {
@@ -26,6 +26,7 @@ export default function setupDefaultNamespace(io) {
 
       socket.join(room);
 
+      //joinging empty room
       if (!rooms[room]) {
         rooms[room] = { red: new Set(), blue: new Set() };
       }
@@ -55,6 +56,7 @@ export default function setupDefaultNamespace(io) {
         const redSize = rooms[room].red.size;
         const blueSize = rooms[room].blue.size;
 
+        //maybe there is  a player with no team !
         if (redSize === 0 && blueSize == 0) {
           delete rooms[room];
           delete roomHosts[room];
