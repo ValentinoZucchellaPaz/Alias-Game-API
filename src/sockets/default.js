@@ -160,6 +160,8 @@ export default function registerRoomSocket(io) {
     socket.on("join-room", ({ code, userId }) => {
       socket.join(code);
       console.log(`User ${userId} joined room ${code}`);
+      //agregar feedback al cliente
+      io.to(code).emit("player:joined", {id:socket.id, userId});
     });
 
     socket.on("chat:message", ({ code, user, text }) => {

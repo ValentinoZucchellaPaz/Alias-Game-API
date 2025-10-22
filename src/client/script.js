@@ -22,6 +22,10 @@ socket.on("connect", () => {
   displayMessage(`You've connected with id: ${socket.id}`);
 });
 
+socket.on("player:joined", ({code,userId}) => {
+  displayMessage(`Player ${userId} joined the room ${code}`)
+})
+
 //receive message
 socket.on("chat:message", ({ user, text, timestamp }) => {
   displayMessage(`${user.name} (${timestamp}): ${text}`);
@@ -66,7 +70,7 @@ form.addEventListener("submit", (e) => {
 //join room
 joinRoomButton.addEventListener("click", (e) => {
   const room = roomInput.value;
-  if (!room || room.trim === "") return;
+  if (!room || room.trim() === "") return;
   socket.emit("join-room", { code: room, userId: 2 });
   //    (message) => {
   //   displayMessage(message);
