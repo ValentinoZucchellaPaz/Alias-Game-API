@@ -91,7 +91,7 @@ export default class RoomManager {
   }
 
   // Unirse a room
-  async joinRoom({ roomId, userId, socketId }) {
+  async joinRoom({ roomId, userId, socketId, isCreator=false }) {
     const room = await this.getRoom(roomId, userId);
 
     // Unir el socket al canal de la sala
@@ -100,13 +100,20 @@ export default class RoomManager {
 
     if (!room.players.includes(userId)) {
       room.players.push(userId);
-      console.log(`🚪 Usuario ${userId} ingresó a sala ${roomId}`);
-      this.io
-        .to(room.code)
-        .emit("player:joined", { userId, players: room.players, code: room.code });
+      if (isCreator){
+        console.log(`🆕 Usuario ${userId} ha creado la sala ${roomId}`);
+      }
+      else{
+        console.log(`🚪 Usuario ${userId} ingresó a sala ${roomId}`);
+      }
+      this.io.to(room.code).emit("player:joined", {
+        userId,
+        players:room.players,
+        code:room.code
+      });
     } else {
-      console.log(`🔁 Usuario ${userId} se reconectó a sala ${roomId}`);
-      this.io.to(room.code).emit("player:reconnected", { userId });
+      console.log(`🔁 Usuario ${userId} se reconectó a sala ${roomId}`)
+      this.io.to(room.code).emit("player:reconnected", {userId})
     }
 
     // Asignar equipo automático
