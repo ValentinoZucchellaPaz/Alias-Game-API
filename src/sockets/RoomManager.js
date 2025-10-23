@@ -25,9 +25,12 @@ export default class RoomManager {
       games: JSON.stringify([]),
       status: "waiting",
     };
+    // Guardar en Redis usando roomId como clave principal
+    await this.redis.hSet(roomId, roomData);
 
-    // Guardar en Redis
-    await this.redis.hSet(code, roomData);
+    // Guardar índice auxiliar para resolver code → roomId
+    await this.redis.set(`roomCode:${code}`, roomId);
+
     // await this.redis.expire(roomId, 3600); // 1 hora TTL
 
     // Guardar en DB
@@ -46,52 +49,35 @@ export default class RoomManager {
   // Traer room desde Redis o DB
   async getRoom(codeOrId, userId) {
     // problema con redis id /code, con que key lo guardo?
-    let room = await this.redis.hGetAll(codeOrId);
-    let roomId;
-    console.log("room code", codeOrId);
-    console.log("room de redis", room);
+    let roomId = codeOrId;
+
+    //Si no es un UUID, asumims que es un codigo
+    if (roomId.length !== 36) {
+      const resolveId = await this.redis.get(`roomCode:${roomId}`);
+      if (resolveId) {
+        roomId = resolveId;
+      } else {
+        //buscar en db como fallback
+        const dbRoom = await Room.findOne({ where: { code: roomId } });
+        if (!dbRoom) {
+          const newRoom = await this.createRoom({ hostId: userId, code: roomId });
+          return { id: newRoom.id, ...newRoom };
+        }
+        roomId = dbRoom.id;
+        await this.redis.set(`roomCode:${dbRoom.code}`, roomId);
+      }
+    }
+
+    const room = await this.redis.hGetAll(roomId);
 
     if (!room || Object.keys(room).length === 0) {
-      // Buscar en DB
-      console.log("buscando en db");
-      const dbRoom = await Room.findOne({ where: { code: codeOrId } });
-
-      if (!dbRoom) {
-        // throw new Error("Room not found"); // guarda, middleware de errores no catchea estos
-        console.log(`🆕 Sala ${codeOrId} no existe, creando nueva...`);
-        const newRoom = await this.createRoom({ hostId: userId, code: codeOrId });
-        return { id: newRoom.id, ...newRoom };
-      }
-
-      console.log("room de db", dbRoom);
-      console.log("room de db id", dbRoom.dataValues.id);
-
-      roomId = dbRoom.dataValues.id;
-      room = {
-        ...dbRoom.dataValues,
-        players: JSON.parse(dbRoom.players),
-        teams: JSON.parse(dbRoom.teams),
-        globalScore: JSON.parse(dbRoom.globalScore),
-        games: JSON.parse(dbRoom.games),
-      };
-
-      // Guardar en Redis
-      await this.redis.hSet(room.code, {
-        code: room.code,
-        hostId: room.hostId,
-        players: JSON.stringify(room.players),
-        teams: JSON.stringify(room.teams),
-        globalScore: JSON.stringify(room.globalScore),
-        games: JSON.stringify(room.games),
-        status: room.status,
-      });
-      //   await this.redis.expire(roomId, 3600);
-    } else {
-      room.players = JSON.parse(room.players);
-      room.teams = JSON.parse(room.teams);
-      room.globalScore = JSON.parse(room.globalScore);
-      room.games = JSON.parse(room.games);
+      throw new Error(`Room ${roomId} not found in Redis`);
     }
+
+    room.players = JSON.parse(room.players);
+    room.teams = JSON.parse(room.teams);
+    room.globalScore = JSON.parse(room.globalScore);
+    room.games = JSON.parse(room.games);
 
     return { id: roomId, ...room };
   }
@@ -100,7 +86,16 @@ export default class RoomManager {
   async joinRoom({ roomId, userId, socketId }) {
     const room = await this.getRoom(roomId, userId);
 
-    if (!room.players.includes(userId)) room.players.push(userId);
+    if (!room.players.includes(userId)) {
+      room.players.push(userId);
+      console.log(`🚪 Usuario ${userId} ingresó a sala ${roomId}`);
+      this.io
+        .to(room.code)
+        .emit("player:joined", { userId, players: room.players, code: room.code });
+    } else {
+      console.log(`🔁 Usuario ${userId} se reconectó a sala ${roomId}`);
+      this.io.to(room.code).emit("player:reconnected", { userId });
+    }
 
     // Asignar equipo automático
     if (
@@ -122,19 +117,17 @@ export default class RoomManager {
       teams: JSON.stringify(room.teams),
     });
 
-    // Feedback vía Socket.IO
-    this.io.to(room.code).emit("player:joined", { userId, players: room.players, code: room.code });
-
     return room;
   }
 
   // Salir de room
   async leaveRoom({ roomId, userId }) {
     const room = await this.getRoom(roomId);
-
     room.players = room.players.filter((id) => id !== userId);
     room.teams.red = room.teams.red.filter((id) => id !== userId);
     room.teams.blue = room.teams.blue.filter((id) => id !== userId);
+
+    console.log(`🧹 Usuario ${userId} eliminado de sala ${roomId}`);
 
     await this.redis.hSet(roomId, {
       players: JSON.stringify(room.players),
