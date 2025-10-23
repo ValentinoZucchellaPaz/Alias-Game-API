@@ -4,8 +4,31 @@ export default function registerRoomSocket(io, roomManager) {
     console.log(`Socket connected: ${socket.id}`);
 
     socket.on("join-room", async ({ code, userId }) => {
-      socket.join(code);
-      await roomManager.joinRoom({ roomId: code, userId, socketId: socket.id });
+      try {
+        const isInRoom = io.sockets.adapter.rooms.get(code)?.has(socket.id);
+        if (isInRoom) {
+          socket.emit("room:error", { message: `You already are in room ${code}` });
+          return;
+        }
+
+        const room = await roomManager.model.findOne({ where: { code, deletedAt: null } });
+        if (!room) {
+          socket.emit("room:error", { message: `Room ${code} not found` });
+          return;
+        }
+
+        const isCreator = room.hostId === userId;
+
+        await roomManager.joinRoom({
+          roomId: room.id,
+          userId,
+          socketId: socket.id,
+          isCreator,
+        });
+      } catch (error) {
+        console.error("X join-room error:", error.message);
+        socket.emit("room:error", { message: error.message });
+      }
     });
 
     socket.on("leave-room", async ({ code, userId }) => {
@@ -18,8 +41,14 @@ export default function registerRoomSocket(io, roomManager) {
     });
 
     socket.on("disconnect", async () => {
-      // opcional: limpiar user de rooms
       console.log(`Socket disconnected: ${socket.id}`);
+
+      socket.rooms.forEach((room) => {
+        if (room !== socket.id) {
+          socket.leave(room);
+          console.log(`🧹 Socket ${socket.id} removido de sala ${room}`);
+        }
+      });
     });
   });
 }
