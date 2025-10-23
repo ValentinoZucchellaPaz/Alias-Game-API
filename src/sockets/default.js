@@ -162,6 +162,7 @@ export default function registerRoomSocket(io) {
     const token = socket.handshake.auth?.token;
     console.log("token recibido:",token)
     const payload = jwt.verifyAccessToken({token});
+    console.log('Payload decodificado:', payload)
 
     if (!payload)
       return next(new Error("Invalid token"));

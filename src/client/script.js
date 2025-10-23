@@ -9,10 +9,9 @@ const leaveRoomButton = document.getElementById("leave-room");
 //CONNECTION TO MULTIPLE NAMESPACES
 const socket = io("http://localhost:4000", {
   auth: {
-    // al pedo esto por ahora
-    token:
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRmYmI3MzRmLTFjMjQtNDQzYi05OTk4LTE1MDllZGVkNzMyMSIsIm5hbWUiOiJtb25kb25nbzAwIiwicm9sZSI6InBsYXllciIsImlhdCI6MTc2MTA3OTg2NSwiZXhwIjoxNzYxMDgwNzY1fQ.1qqCFf_pVZj0j5alZ_6lpHDVEx0FVZ9BpIdensvom7c",
-  },
+    //token generado por archivo utilitario en src/scripts/generateToken.js
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRmYmI3MzRmLTFjMjQtNDQzYi05OTk4LTE1MDllZGVkNzMyMSIsIm5hbWUiOiJtb25kb25nbzAwIiwicm9sZSI6InBsYXllciIsImlhdCI6MTc2MTIyMjYzNiwiZXhwIjoxNzYxMjI2MjM2fQ.PFSvYw9dn0GxungNa2jRYO2iDb8nqvZz4DG5buqc-ME"
+  }
 });
 
 let currentRoom = null;
