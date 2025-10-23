@@ -11,8 +11,9 @@ export default class RoomManager {
   }
 
   // Crear nueva room
-  async createRoom({ hostId }) {
-    const code = Math.random().toString(36).substring(2, 7).toUpperCase();
+  // async createRoom({ hostId }) {
+  async createRoom({ hostId, code }) {
+    const roomCode = code || Math.random().toString(36).substring(2, 7).toUpperCase();
     const roomId = uuidv4();
 
     const roomData = {
@@ -32,11 +33,18 @@ export default class RoomManager {
     // Guardar en DB
     await this.model.create({ id: roomId, ...roomData });
 
-    return { id: roomId, ...roomData };
+    return {
+      id: roomId,
+      ...roomData,
+      players: JSON.parse(roomData.players),
+      teams: JSON.parse(roomData.teams),
+      globalScore: JSON.parse(roomData.globalScore),
+      games: JSON.parse(roomData.games),
+    };
   }
 
   // Traer room desde Redis o DB
-  async getRoom(codeOrId) {
+  async getRoom(codeOrId, userId) {
     // problema con redis id /code, con que key lo guardo?
     let room = await this.redis.hGetAll(codeOrId);
     let roomId;
@@ -47,7 +55,13 @@ export default class RoomManager {
       // Buscar en DB
       console.log("buscando en db");
       const dbRoom = await Room.findOne({ where: { code: codeOrId } });
-      if (!dbRoom) throw new Error("Room not found"); // guarda, middleware de errores no catchea estos
+
+      if (!dbRoom) {
+        // throw new Error("Room not found"); // guarda, middleware de errores no catchea estos
+        console.log(`🆕 Sala ${codeOrId} no existe, creando nueva...`);
+        const newRoom = await this.createRoom({ hostId: userId, code: codeOrId });
+        return { id: newRoom.id, ...newRoom };
+      }
 
       console.log("room de db", dbRoom);
       console.log("room de db id", dbRoom.dataValues.id);
@@ -84,12 +98,18 @@ export default class RoomManager {
 
   // Unirse a room
   async joinRoom({ roomId, userId, socketId }) {
-    const room = await this.getRoom(roomId);
+    const room = await this.getRoom(roomId, userId);
 
     if (!room.players.includes(userId)) room.players.push(userId);
 
     // Asignar equipo automático
-    if (!room.teams.red.includes(userId) && !room.teams.blue.includes(userId)) {
+    if (
+      room.teams &&
+      Array.isArray(room.teams.red) &&
+      Array.isArray(room.teams.blue) &&
+      !room.teams.red.includes(userId) &&
+      !room.teams.blue.includes(userId)
+    ) {
       const redCount = room.teams.red.length;
       const blueCount = room.teams.blue.length;
       const team = redCount <= blueCount ? "red" : "blue";
