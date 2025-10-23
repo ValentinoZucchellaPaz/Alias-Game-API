@@ -8,7 +8,8 @@
     "dev": "node --watch src/server.js",
     "test": "vitest --run",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "reset-dev": "cross-env NODE_ENV=development node src/utils/resetDevState.js"
   },
   "author": "",
   "license": "ISC",
@@ -17,18 +18,16 @@
     "cookie-parser": "1.4.7",
     "dotenv": "17.2.3",
     "express": "5.1.0",
-    "pg": "^8.16.3",
-    "sequelize": "^6.37.7",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
-    "zod": "^4.1.12",
     "jsonwebtoken": "9.0.2",
     "pg": "8.16.3",
     "redis": "5.8.3",
     "sequelize": "6.37.7",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "zod": "4.1.12"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "eslint": "9.37.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.4",
