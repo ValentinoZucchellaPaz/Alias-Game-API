@@ -4,6 +4,7 @@ export default function registerRoomSocket(io, roomManager) {
     console.log(`Socket connected: ${socket.id}`);
 
     socket.on("join-room", async ({ code, userId }) => {
+      console.log(`📥 Evento join-room recibido: userId=${userId}, code=${code}`);
       try {
         // 🔁 Limpiar salas previas antes de unir
         socket.rooms.forEach((room) => {

@@ -29,6 +29,11 @@ socket.on("player:joined", ({ userId, players, code }) => {
   displayMessage(`Player ${userId} joined the room ${code}`);
 });
 
+socket.on("player:reconnected", ({ userId }) => {
+  displayMessage(`Player ${userId} reconnected to the room`);
+  document.getElementById("room-name").textContent = code;
+});
+
 //receive message feedback
 socket.on("chat:message", ({ user, text, timestamp }) => {
   displayMessage(`${user.name} (${timestamp}): ${text}`);
@@ -78,7 +83,7 @@ joinRoomButton.addEventListener("click", (e) => {
     displayMessage(`You already are in room ${room}`)
     return;
   }
-  socket.emit("join-room", { code: room, userId: 2 });
+  socket.emit("join-room", { code: room, userId });
   currentRoom = room;
 });
 
