@@ -156,10 +156,9 @@
 import Room from "../models/sequelize/Room.js";
 import jwt from "../utils/jwt.js";
 import RoomManager from "./RoomManager.js";
-import redisClient from '../config/redis.js'
+import redisClient from "../config/redis.js";
 export default function registerRoomSocket(io) {
-
-  const roomManager = new RoomManager({redis:redisClient, model:Room})
+  const roomManager = new RoomManager({ redis: redisClient, model: Room });
 
   //middleware de autenticacion de tokens;
   io.use((socket, next) => {
@@ -179,21 +178,34 @@ export default function registerRoomSocket(io) {
 
   //conexion latente de los socket
   io.on("connection", (socket) => {
-
     console.log(`Socket connected: ${socket.id}`);
 
-    socket.on("join-room", ({ code, userId }) => {
+    socket.on("join-room", async ({ code, userId }) => {
+      try {
+        const currentRooms = Array.from(socket.rooms);
+        if (currentRooms.includes(code)) {
+          socket.emit("room:error", { message: `You already are in room ${code}` });
+          return;
+        }
 
-      //validacion para ver si ya se encuentra en la room
-      const currentRooms = Array.from(socket.rooms);
-      if (currentRooms.includes(code)){
-        socket.emit("room:error", {message:`You already are in room ${code}`});
+        const room = await Room.findOne({ where: { code, deletedAt: null } });
+        if (!room) {
+          socket.emit("room:error", { message: `Room ${code} not found` });
+          return;
+        }
+
+        const isCreator = room.hostId === userId;
+
+        await roomManager.joinRoom({
+          roomId: room.id,
+          userId,
+          socketId: socket.id,
+          isCreator,
+        });
+      } catch (error) {
+        console.error("X join-room error:", error.message);
+        socket.emit("room:error", { message: error.message });
       }
-
-      socket.join(code);
-      console.log(`User ${userId} joined room ${code}`);
-      //agregar feedback al cliente
-      io.to(code).emit("player:joined", { code, userId });
     });
 
     socket.on("chat:message", ({ code, user, text }) => {
@@ -210,11 +222,11 @@ export default function registerRoomSocket(io) {
 
     socket.on("leave-room", async ({ code, userId }) => {
       try {
-        await roomManager.leaveRoom({code,userId,socketId: socket.id});
-        io.to(code),emit("player:left", {userId});
+        await roomManager.leaveRoom({ code, userId, socketId: socket.id });
+        (io.to(code), emit("player:left", { userId }));
       } catch (error) {
         console.error("X leaveRoom error:", error.message);
-        socket.emit("room:error", {message:error.message});
+        socket.emit("room:error", { message: error.message });
       }
     });
 
