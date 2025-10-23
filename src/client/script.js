@@ -74,12 +74,12 @@ form.addEventListener("submit", (e) => {
 joinRoomButton.addEventListener("click", (e) => {
   const room = roomInput.value;
   if (!room || room.trim() === "") return;
+  if (currentRoom === room ){
+    displayMessage(`You already are in room ${room}`)
+    return;
+  }
   socket.emit("join-room", { code: room, userId: 2 });
-  //    (message) => {
-  //   displayMessage(message);
-  //   document.getElementById("room-name").textContent = room; //display room name
   currentRoom = room;
-  // });
 });
 
 //leave room button handling

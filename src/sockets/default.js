@@ -158,7 +158,9 @@ import jwt from "../utils/jwt.js";
 import RoomManager from "./RoomManager.js";
 import redisClient from '../config/redis.js'
 export default function registerRoomSocket(io) {
+
   const roomManager = new RoomManager({redis:redisClient, model:Room})
+
   //middleware de autenticacion de tokens;
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
@@ -175,10 +177,19 @@ export default function registerRoomSocket(io) {
     next();
   });
 
+  //conexion latente de los socket
   io.on("connection", (socket) => {
+
     console.log(`Socket connected: ${socket.id}`);
 
     socket.on("join-room", ({ code, userId }) => {
+
+      //validacion para ver si ya se encuentra en la room
+      const currentRooms = Array.from(socket.rooms);
+      if (currentRooms.includes(code)){
+        socket.emit("room:error", {message:`You already are in room ${code}`});
+      }
+
       socket.join(code);
       console.log(`User ${userId} joined room ${code}`);
       //agregar feedback al cliente
