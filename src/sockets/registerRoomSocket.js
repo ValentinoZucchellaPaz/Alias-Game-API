@@ -5,6 +5,14 @@ export default function registerRoomSocket(io, roomManager) {
 
     socket.on("join-room", async ({ code, userId }) => {
       try {
+        // 🔁 Limpiar salas previas antes de unir
+        socket.rooms.forEach((room) => {
+          if (room !== socket.id) {
+            socket.leave(room);
+            console.log(`🧹 Socket ${socket.id} removido de sala previa ${room}`);
+          }
+        });
+
         const isInRoom = io.sockets.adapter.rooms.get(code)?.has(socket.id);
         if (isInRoom) {
           socket.emit("room:error", { message: `You already are in room ${code}` });
