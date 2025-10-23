@@ -153,7 +153,30 @@
 //   }
 //   return false;
 // }
+import jwt from '../utils/jwt.js'
 export default function registerRoomSocket(io) {
+
+
+  //middleware de autenticacion de tokens
+  io.use((socket,next) => {
+    const token = socket.handshake.auth?.token;
+    console.log("token recibido:",token)
+    const payload = jwt.verifyAccessToken({token});
+    console.log('Payload decodificado:', payload)
+
+    if (!payload)
+      return next(new Error("Invalid token"));
+
+    socket.userId = payload.id;
+    socket.userName=payload.name;
+    socket.userRole=payload.role;
+
+    next();
+  });
+
+
+
+
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
@@ -174,6 +197,13 @@ export default function registerRoomSocket(io) {
 
       // Enviar a todos los usuarios en esa room (menos al que lo mando)
       socket.broadcast.to(code).emit("chat:message", message);
+    });
+
+
+    socket.on("leave-room", ({code, userId})=>{
+      socket.leave(code);
+      console.log(`User ${userId} left room ${code}`);
+      io.to(code).emit("player:left", {userId});
     });
 
     socket.on("disconnect", () => {

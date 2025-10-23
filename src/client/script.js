@@ -9,24 +9,25 @@ const leaveRoomButton = document.getElementById("leave-room");
 //CONNECTION TO MULTIPLE NAMESPACES
 const socket = io("http://localhost:4000", {
   auth: {
-    // al pedo esto por ahora
+    //token generado por archivo utilitario en src/scripts/generateToken.js
     token:
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRmYmI3MzRmLTFjMjQtNDQzYi05OTk4LTE1MDllZGVkNzMyMSIsIm5hbWUiOiJtb25kb25nbzAwIiwicm9sZSI6InBsYXllciIsImlhdCI6MTc2MTA3OTg2NSwiZXhwIjoxNzYxMDgwNzY1fQ.1qqCFf_pVZj0j5alZ_6lpHDVEx0FVZ9BpIdensvom7c",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRmYmI3MzRmLTFjMjQtNDQzYi05OTk4LTE1MDllZGVkNzMyMSIsIm5hbWUiOiJtb25kb25nbzAwIiwicm9sZSI6InBsYXllciIsImlhdCI6MTc2MTIyMjYzNiwiZXhwIjoxNzYxMjI2MjM2fQ.PFSvYw9dn0GxungNa2jRYO2iDb8nqvZz4DG5buqc-ME",
   },
 });
 
 let currentRoom = null;
 
-// on connection of a socket
+// on connection feedback
 socket.on("connect", () => {
   displayMessage(`You've connected with id: ${socket.id}`);
 });
 
+//player joining feedback
 socket.on("player:joined", ({ code, userId }) => {
   displayMessage(`Player ${userId} joined the room ${code}`);
 });
 
-//receive message
+//receive message feedback
 socket.on("chat:message", ({ user, text, timestamp }) => {
   displayMessage(`${user.name} (${timestamp}): ${text}`);
 });
@@ -47,7 +48,7 @@ socket.on("chat:message", ({ user, text, timestamp }) => {
 //   });
 // });
 
-//send message
+//send message button handling
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   const message = messageInput.value;
@@ -67,7 +68,7 @@ form.addEventListener("submit", (e) => {
   messageInput.value = "";
 });
 
-//join room
+//join room button handling
 joinRoomButton.addEventListener("click", (e) => {
   const room = roomInput.value;
   if (!room || room.trim() === "") return;
@@ -79,17 +80,17 @@ joinRoomButton.addEventListener("click", (e) => {
   // });
 });
 
-// //leave room
-// leaveRoomButton.addEventListener("click", () => {
-//   const room = roomInput.value;
-//   if (!room) return;
-//   socket.emit("leave-room", room, () => {
-//     //clean interface
-//     resetRoomUI();
-//     displayMessage(`You have left room ${room}`);
-//     currentRoom = null;
-//   });
-// });
+//leave room button handling
+leaveRoomButton.addEventListener("click", () => {
+  const code = roomInput.value;
+  if (!code) return;
+  socket.emit("leave-room", { code, userId });
+});
+
+//leave room feedback
+socket.on("player:left", ({ userId }) => {
+  displayMessage(`Player ${userId} left the room`);
+});
 
 // //host assignation
 // socket.on("host-assigned", ({ room }) => {
@@ -128,6 +129,7 @@ function displayMessage(message) {
   document.getElementById("message-container").append(div);
 }
 
+//update the interface with the list of players in teams (or without team)
 function updateTeamList(team, players) {
   const container =
     team === "no-team"
@@ -148,6 +150,7 @@ function updateTeamList(team, players) {
   });
 }
 
+//get the fields empty
 function resetRoomUI() {
   document.getElementById("room-name").textContent = "None";
   document.getElementById("message-container").innerHTML = "";
