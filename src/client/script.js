@@ -16,6 +16,8 @@ const socket = io("http://localhost:4000", {
 });
 
 let currentRoom = null;
+const token = socket.auth.token;
+const userId = getUserIdFromToken(token);
 
 // on connection feedback
 socket.on("connect", () => {
@@ -164,3 +166,11 @@ function resetRoomUI() {
 //   if (!currentRoom) return;
 //   socket.emit("start-game", { room: currentRoom });
 // });
+
+
+function getUserIdFromToken(token){
+  const payload = token.split(".")[1];
+  const decoded = atob(payload);
+  const parsed = JSON . parse(decoded);
+  return parsed.id;
+}
