@@ -2,6 +2,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { Room } from "../models/sequelize/index.js";
 
+// const roomManager = new RoomManager({ redisClient: roomCache, model: Room, io });
 export default class RoomManager {
   constructor({ redisClient, model, io }) {
     this.redis = redisClient; // Redis
@@ -102,7 +103,7 @@ export default class RoomManager {
     });
 
     // Feedback vía Socket.IO
-    this.io.to(room.code).emit("player:joined", { userId, players: room.players });
+    this.io.to(room.code).emit("player:joined", { userId, players: room.players, code: room.code });
 
     return room;
   }

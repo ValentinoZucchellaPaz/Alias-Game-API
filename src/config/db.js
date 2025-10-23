@@ -1,7 +1,7 @@
 import { Sequelize } from "sequelize";
 import dotenv from "dotenv";
 
-dotenv.config({ quiet: true });
+dotenv.config({ quiet: true }); // valentino
 
 console.log("DB_USER:", process.env.DB_USER);
 

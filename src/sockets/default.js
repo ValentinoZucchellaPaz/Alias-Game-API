@@ -153,29 +153,23 @@
 //   }
 //   return false;
 // }
-import jwt from '../utils/jwt.js'
+import jwt from "../utils/jwt.js";
 export default function registerRoomSocket(io) {
-
-
   //middleware de autenticacion de tokens
-  io.use((socket,next) => {
+  io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
-    console.log("token recibido:",token)
-    const payload = jwt.verifyAccessToken({token});
-    console.log('Payload decodificado:', payload)
+    console.log("token recibido:", token);
+    const payload = jwt.verifyAccessToken({ token });
+    console.log("Payload decodificado:", payload);
 
-    if (!payload)
-      return next(new Error("Invalid token"));
+    if (!payload) return next(new Error("Invalid token"));
 
     socket.userId = payload.id;
-    socket.userName=payload.name;
-    socket.userRole=payload.role;
+    socket.userName = payload.name;
+    socket.userRole = payload.role;
 
     next();
   });
-
-
-
 
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.id}`);
@@ -199,11 +193,10 @@ export default function registerRoomSocket(io) {
       socket.broadcast.to(code).emit("chat:message", message);
     });
 
-
-    socket.on("leave-room", ({code, userId})=>{
+    socket.on("leave-room", ({ code, userId }) => {
       socket.leave(code);
       console.log(`User ${userId} left room ${code}`);
-      io.to(code).emit("player:left", {userId});
+      io.to(code).emit("player:left", { userId });
     });
 
     socket.on("disconnect", () => {

@@ -23,7 +23,7 @@ socket.on("connect", () => {
 });
 
 //player joining feedback
-socket.on("player:joined", ({ code, userId }) => {
+socket.on("player:joined", ({ userId, players, code }) => {
   displayMessage(`Player ${userId} joined the room ${code}`);
 });
 
