@@ -22,9 +22,9 @@ socket.on("connect", () => {
   displayMessage(`You've connected with id: ${socket.id}`);
 });
 
-socket.on("player:joined", ({code,userId}) => {
-  displayMessage(`Player ${userId} joined the room ${code}`)
-})
+socket.on("player:joined", ({ code, userId }) => {
+  displayMessage(`Player ${userId} joined the room ${code}`);
+});
 
 //receive message
 socket.on("chat:message", ({ user, text, timestamp }) => {
@@ -59,7 +59,7 @@ form.addEventListener("submit", (e) => {
   // socket.emit("send-message", { message, room, sender: socket.id });
   socket.emit("chat:message", {
     code: room,
-    user: { id: 1, name: "mondongo" },
+    user: { id: 1, name: "mondongo" }, // recuperar de session
     text: message,
   });
   displayMessage(`You: ${message}`);

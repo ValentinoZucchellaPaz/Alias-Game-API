@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { createRoom, joinRoom, updateRoomStatus } from "../controllers/room.controller.js";
+import {
+  createRoom,
+  joinRoom,
+  leaveRoom,
+  updateRoomStatus,
+} from "../controllers/room.controller.js";
 import { extractTokens, getSession } from "../middlewares/authHandler.js";
 
 const router = Router();
@@ -7,6 +12,7 @@ const router = Router();
 // Middlewares de auth ya están hechos
 router.post("/", extractTokens, getSession, createRoom);
 router.post("/:code/join", extractTokens, getSession, joinRoom);
-router.patch("/:code/status", updateRoomStatus);
+router.delete("/:code/leave", extractTokens, getSession, leaveRoom);
+router.patch("/:code/status", extractTokens, getSession, updateRoomStatus);
 
 export default router;

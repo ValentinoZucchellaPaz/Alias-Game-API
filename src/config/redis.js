@@ -66,6 +66,20 @@ class Redis {
     await this.client.del(this._key(key));
   }
 
+  // metodos para rooms
+  async hSet(key, data, ttl) {
+    console.log("esto es adentro de redis cleint", this._key(key));
+    await this.connectRedis();
+    await this.client.hSet(this._key(key), data);
+    if (ttl ?? this.ttl) await this.client.expire(this._key(key), ttl ?? this.ttl);
+  }
+
+  async hGetAll(key) {
+    await this.connectRedis();
+    const data = await this.client.hGetAll(this._key(key));
+    return Object.keys(data).length ? data : null;
+  }
+
   async disconnect() {
     if (this.connected) {
       this.client.destroy(); // recomendacion del ide xq disconnect está deprecado
@@ -75,6 +89,8 @@ class Redis {
   }
 }
 
-const redisClient = new Redis({ ttl: 3600, prefix: "alias-game:" });
+// muchos redis client para cada cosa
+const tokenCache = new Redis({ ttl: 24 * 3600, prefix: "alias-game:token:" }); // min duracion token 1 dia
+const roomCache = new Redis({ ttl: 6 * 3600, prefix: "alias-game:room:" });
 
-export { redisClient };
+export { tokenCache, roomCache };

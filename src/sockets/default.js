@@ -161,7 +161,7 @@ export default function registerRoomSocket(io) {
       socket.join(code);
       console.log(`User ${userId} joined room ${code}`);
       //agregar feedback al cliente
-      io.to(code).emit("player:joined", {code, userId});
+      io.to(code).emit("player:joined", { code, userId });
     });
 
     socket.on("chat:message", ({ code, user, text }) => {
@@ -173,8 +173,7 @@ export default function registerRoomSocket(io) {
       };
 
       // Enviar a todos los usuarios en esa room (menos al que lo mando)
-      // io.to(code).emit("chat:message", message);
-      socket.broadcast.emit("chat:message", message);
+      socket.broadcast.to(code).emit("chat:message", message);
     });
 
     socket.on("disconnect", () => {
