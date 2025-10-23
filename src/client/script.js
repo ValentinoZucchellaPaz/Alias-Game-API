@@ -94,11 +94,13 @@ socket.on("player:left", ({ userId }) => {
   displayMessage(`Player ${userId} left the room`);
 });
 
-// //host assignation
-// socket.on("host-assigned", ({ room }) => {
-//   displayMessage(`You are now the host of room ${room}`);
-//   document.getElementById("start-game-button").style.display = "inline-block";
-// });
+//host assignation
+socket.on("room:create", ({ code, hostId, players, teams }) => {
+  displayMessage(`You are now the host of room ${code}`);
+  updateTeamList("red", teams.red);
+  updateTeamList("blue", teams.blue);
+  document.getElementById("start-game-button").style.display = "inline-block";
+});
 
 // //update teams' information
 // socket.on("team-state", ({ red, blue, unassigned }) => {

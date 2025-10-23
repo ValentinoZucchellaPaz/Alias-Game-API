@@ -36,6 +36,13 @@ export default class RoomManager {
     // Guardar en DB
     await this.model.create({ id: roomId, ...roomData });
 
+    this.io.to(code).emit("room:create", {
+      hostId,
+      code,
+      players: [hostId],
+      teams: { red: [hostId], blue: [] },
+    });
+    
     return {
       id: roomId,
       ...roomData,
@@ -44,6 +51,7 @@ export default class RoomManager {
       globalScore: JSON.parse(roomData.globalScore),
       games: JSON.parse(roomData.games),
     };
+
   }
 
   // Traer room desde Redis o DB
@@ -89,7 +97,6 @@ export default class RoomManager {
     // Unir el socket al canal de la sala
     this.io.sockets.sockets.get(socketId)?.join(room.code);
     console.log(`🔗 Socket ${socketId} unido a canal ${room.code}`);
-
 
     if (!room.players.includes(userId)) {
       room.players.push(userId);
