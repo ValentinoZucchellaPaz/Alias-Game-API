@@ -86,6 +86,11 @@ export default class RoomManager {
   async joinRoom({ roomId, userId, socketId }) {
     const room = await this.getRoom(roomId, userId);
 
+    // Unir el socket al canal de la sala
+    this.io.sockets.sockets.get(socketId)?.join(room.code);
+    console.log(`🔗 Socket ${socketId} unido a canal ${room.code}`);
+
+
     if (!room.players.includes(userId)) {
       room.players.push(userId);
       console.log(`🚪 Usuario ${userId} ingresó a sala ${roomId}`);
