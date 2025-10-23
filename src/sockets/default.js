@@ -153,9 +153,13 @@
 //   }
 //   return false;
 // }
+import Room from "../models/sequelize/Room.js";
 import jwt from "../utils/jwt.js";
+import RoomManager from "./RoomManager.js";
+import redisClient from '../config/redis.js'
 export default function registerRoomSocket(io) {
-  //middleware de autenticacion de tokens
+  const roomManager = new RoomManager({redis:redisClient, model:Room})
+  //middleware de autenticacion de tokens;
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
     console.log("token recibido:", token);
@@ -193,10 +197,14 @@ export default function registerRoomSocket(io) {
       socket.broadcast.to(code).emit("chat:message", message);
     });
 
-    socket.on("leave-room", ({ code, userId }) => {
-      socket.leave(code);
-      console.log(`User ${userId} left room ${code}`);
-      io.to(code).emit("player:left", { userId });
+    socket.on("leave-room", async ({ code, userId }) => {
+      try {
+        await roomManager.leaveRoom({code,userId,socketId: socket.id});
+        io.to(code),emit("player:left", {userId});
+      } catch (error) {
+        console.error("X leaveRoom error:", error.message);
+        socket.emit("room:error", {message:error.message});
+      }
     });
 
     socket.on("disconnect", () => {
