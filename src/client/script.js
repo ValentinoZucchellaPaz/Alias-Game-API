@@ -6,38 +6,8 @@ const joinRedButton = document.getElementById("join-red-button");
 const joinBlueButton = document.getElementById("join-blue-button");
 const leaveRoomButton = document.getElementById("leave-room");
 
-//CONNECTION TO MULTIPLE NAMESPACES
-const socket = io("http://localhost:4000", {
-  auth: {
-    //token generado por archivo utilitario en src/scripts/generateToken.js
-    token:
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRmYmI3MzRmLTFjMjQtNDQzYi05OTk4LTE1MDllZGVkNzMyMSIsIm5hbWUiOiJtb25kb25nbzAwIiwicm9sZSI6InBsYXllciIsImlhdCI6MTc2MTIyMjYzNiwiZXhwIjoxNzYxMjI2MjM2fQ.PFSvYw9dn0GxungNa2jRYO2iDb8nqvZz4DG5buqc-ME",
-  },
-});
-
+let socket = null;
 let currentRoom = null;
-const token = socket.auth.token;
-const userId = getUserIdFromToken(token);
-
-// on connection feedback
-socket.on("connect", () => {
-  displayMessage(`You've connected with id: ${socket.id}`);
-});
-
-//player joining feedback
-socket.on("player:joined", ({ userId, players, code }) => {
-  displayMessage(`Player ${userId} joined the room ${code}`);
-});
-
-socket.on("player:reconnected", ({ userId }) => {
-  displayMessage(`Player ${userId} reconnected to the room`);
-  document.getElementById("room-name").textContent = code;
-});
-
-//receive message feedback
-socket.on("chat:message", ({ user, text, timestamp }) => {
-  displayMessage(`${user.name} (${timestamp}): ${text}`);
-});
 
 //join red team event triggering
 // joinRedButton.addEventListener("click", () => {
@@ -55,6 +25,161 @@ socket.on("chat:message", ({ user, text, timestamp }) => {
 //   });
 // });
 
+// login button (hardcoded)
+let authToken = null;
+let payload = null;
+const loginButton1 = document.getElementById("login-button-1");
+const loginButton2 = document.getElementById("login-button-2");
+
+loginButton1.addEventListener("click", (e) => {
+  handleLogin(e, 1);
+});
+loginButton2.addEventListener("click", (e) => {
+  handleLogin(e, 2);
+});
+
+const handleLogin = (e, userNumber) => {
+  e.preventDefault();
+  displayMessage("Performing hardcoded login...");
+
+  (async () => {
+    displayMessage("Performing login...");
+
+    try {
+      const res = await fetch("http://localhost:4000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: `user${userNumber}@email.com`,
+          password: "123456",
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        displayMessage(`Login failed: ${res.status} ${errText}`);
+        return;
+      }
+
+      const data = await res.json();
+      authToken = data.accessToken || null;
+
+      if (!authToken) {
+        displayMessage("Login succeeded but no token returned by server");
+        return;
+      }
+
+      // hide login button and show username in the UI
+      if (loginButton1) loginButton1.style.display = "none";
+      if (loginButton2) loginButton2.style.display = "none";
+
+      try {
+        payload = getUserPayloadFromToken(authToken);
+        const name = payload.name || "Unknown";
+        const userDisplay = document.getElementById("user-display");
+        userDisplay.style.display = "inline";
+        if (userDisplay) userDisplay.textContent = name;
+        displayMessage("successfull login");
+      } catch (err) {
+        console.warn("Failed to decode token for user display", err);
+      }
+    } catch (err) {
+      console.log(err);
+      displayMessage(`Login error: ${err.message}`);
+    }
+  })();
+};
+
+//join room button handling -- CONNECT TO SOCKET
+joinRoomButton.addEventListener("click", async (e) => {
+  e.preventDefault();
+  const room = roomInput.value?.trim();
+  if (!room) return;
+
+  if (!authToken) {
+    displayMessage("login needed");
+    return;
+  }
+
+  if (currentRoom === room) {
+    displayMessage(`You already are in room ${room}`);
+    return;
+  }
+
+  try {
+    const res = await fetch(`http://localhost:4000/api/rooms/${encodeURIComponent(room)}/join`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      // body: JSON.stringify({ userId: payload?.id }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      displayMessage(`Join room failed: ${res.status} ${text}`);
+      return;
+    }
+
+    // connect to socket server (replace URL if needed)
+    if (socket && socket.connected) socket.disconnect();
+    socket = io("http://localhost:4000", { auth: { token: authToken } });
+
+    socket.on("connect", () => {
+      displayMessage(`You've connected with id: ${socket.id}`);
+      socket.emit("join-room", { code: room, userId: payload?.id });
+      currentRoom = room;
+    });
+
+    socket.on("connect_error", (err) => {
+      displayMessage(`Socket connection error: ${err?.message || err}`);
+    });
+    // TODOS LOS EVENTOS DEL SOCKET
+
+    socket.on("chat:message", ({ user, text, timestamp }) => {
+      console.log("me llego un msje");
+      displayMessage(`${user.name} (${timestamp}): ${text}`);
+    });
+
+    // on connection feedback
+    // socket.on("connect", () => {
+    //   displayMessage(`You've connected with id: ${socket.id}`);
+    // });
+
+    //player joining feedback
+    socket.on("player:joined", ({ user, players, code }) => {
+      displayMessage(`Player ${user.name} joined the room ${code}`);
+    });
+
+    socket.on("player:reconnected", ({ userId }) => {
+      displayMessage(`Player ${userId} reconnected to the room`);
+      document.getElementById("room-name").textContent = code;
+    });
+
+    //receive message feedback
+    socket.on("chat:message", ({ user, text, timestamp }) => {
+      console.log("me llego un msje");
+      displayMessage(`${user.name} (${timestamp}): ${text}`);
+    });
+
+    //leave room feedback
+    socket.on("player:left", ({ userId }) => {
+      displayMessage(`Player ${userId} left the room`);
+    });
+
+    //host assignation
+    socket.on("room:create", ({ code, hostId, players, teams }) => {
+      displayMessage(`You are now the host of room ${code}`);
+      updateTeamList("red", teams.red);
+      updateTeamList("blue", teams.blue);
+      document.getElementById("start-game-button").style.display = "inline-block";
+    });
+  } catch (err) {
+    displayMessage(`Error joining room: ${err?.message || err}`);
+  }
+});
+
 //send message button handling
 form.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -67,7 +192,7 @@ form.addEventListener("submit", (e) => {
   // socket.emit("send-message", { message, room, sender: socket.id });
   socket.emit("chat:message", {
     code: room,
-    user: { id: 1, name: "mondongo" }, // recuperar de session
+    user: payload, // recuperar de session
     text: message,
   });
   displayMessage(`You: ${message}`);
@@ -75,37 +200,15 @@ form.addEventListener("submit", (e) => {
   messageInput.value = "";
 });
 
-//join room button handling
-joinRoomButton.addEventListener("click", (e) => {
-  const room = roomInput.value;
-  if (!room || room.trim() === "") return;
-  if (currentRoom === room ){
-    displayMessage(`You already are in room ${room}`)
-    return;
-  }
-  socket.emit("join-room", { code: room, userId });
-  currentRoom = room;
-});
-
 //leave room button handling
 leaveRoomButton.addEventListener("click", () => {
   const code = roomInput.value;
   if (!code) return;
-  socket.emit("leave-room", { code, userId });
+  socket.emit("leave-room", { code, userId: payload?.id });
 });
 
-//leave room feedback
-socket.on("player:left", ({ userId }) => {
-  displayMessage(`Player ${userId} left the room`);
-});
-
-//host assignation
-socket.on("room:create", ({ code, hostId, players, teams }) => {
-  displayMessage(`You are now the host of room ${code}`);
-  updateTeamList("red", teams.red);
-  updateTeamList("blue", teams.blue);
-  document.getElementById("start-game-button").style.display = "inline-block";
-});
+// ==========================================
+// sockets
 
 // //update teams' information
 // socket.on("team-state", ({ red, blue, unassigned }) => {
@@ -174,10 +277,8 @@ function resetRoomUI() {
 //   socket.emit("start-game", { room: currentRoom });
 // });
 
-
-function getUserIdFromToken(token){
+function getUserPayloadFromToken(token) {
   const payload = token.split(".")[1];
   const decoded = atob(payload);
-  const parsed = JSON . parse(decoded);
-  return parsed.id;
+  return JSON.parse(decoded);
 }

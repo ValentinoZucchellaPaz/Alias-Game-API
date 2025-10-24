@@ -8,7 +8,20 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header>Room: <span id="room-name">None</span></header>
+    <header
+      class="top-header"
+      role="banner"
+      style="display: flex; justify-content: space-between; align-items: center"
+    >
+      <div class="room-info">Room: <span id="room-name">None</span></div>
+      <div class="auth-controls">
+        <button id="login-button-1" type="button" aria-label="Log in">Log in user1</button>
+        <button id="login-button-2" type="button" aria-label="Log in">Log in user2</button>
+        <span id="user-display" style="display: none; margin-left: 8px"
+          >Signed in as <strong id="user-name"></strong
+        ></span>
+      </div>
+    </header>
 
     <div class="container">
       <div class="game-info">
@@ -70,7 +83,7 @@
       <button id="leave-room">Leave room</button>
 
       <!-- Start game button -->
-      <button id="start-game-button" style="display: none;" disabled>Start Game</button>
+      <button id="start-game-button" style="display: none" disabled>Start Game</button>
     </div>
   </body>
 </html>

@@ -15,7 +15,7 @@ export const joinRoom = async (req, res) => {
   const room = await roomManager.joinRoom({
     roomId: code,
     userId: req.user.id,
-    socketId: req.socketId,
+    // socketId: req.socketId,
   });
   res.json(room);
 };

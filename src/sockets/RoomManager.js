@@ -12,12 +12,13 @@ export default class RoomManager {
 
   // Crear nueva room
   // async createRoom({ hostId }) {
-  async createRoom({ hostId, code }) {
-    const roomCode = code || Math.random().toString(36).substring(2, 7).toUpperCase();
+  async createRoom({ hostId }) {
+    // puede trabajar solo http
+    const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
     const roomId = uuidv4();
 
     const roomData = {
-      code,
+      code: roomCode,
       hostId,
       players: JSON.stringify([hostId]),
       teams: JSON.stringify({ red: [hostId], blue: [] }),
@@ -29,20 +30,21 @@ export default class RoomManager {
     await this.redis.hSet(roomId, roomData);
 
     // Guardar índice auxiliar para resolver code → roomId
-    await this.redis.set(`roomCode:${code}`, roomId);
+    await this.redis.set(`roomCode:${roomCode}`, roomId);
 
     // await this.redis.expire(roomId, 3600); // 1 hora TTL
 
     // Guardar en DB
     await this.model.create({ id: roomId, ...roomData });
 
-    this.io.to(code).emit("room:create", {
+    this.io.to(roomCode).emit("room:create", {
+      // precindible
       hostId,
-      code,
+      roomCode,
       players: [hostId],
       teams: { red: [hostId], blue: [] },
     });
-    
+
     return {
       id: roomId,
       ...roomData,
@@ -51,11 +53,11 @@ export default class RoomManager {
       globalScore: JSON.parse(roomData.globalScore),
       games: JSON.parse(roomData.games),
     };
-
   }
 
   // Traer room desde Redis o DB
   async getRoom(codeOrId, userId) {
+    // puede trabajar solo http
     // problema con redis id /code, con que key lo guardo?
     let roomId = codeOrId;
 
@@ -68,8 +70,9 @@ export default class RoomManager {
         //buscar en db como fallback
         const dbRoom = await Room.findOne({ where: { code: roomId } });
         if (!dbRoom) {
-          const newRoom = await this.createRoom({ hostId: userId, code: roomId });
-          return { id: newRoom.id, ...newRoom };
+          // const newRoom = await this.createRoom({ hostId: userId, code: roomId });
+          // return { id: newRoom.id, ...newRoom };
+          return null;
         }
         roomId = dbRoom.id;
         await this.redis.set(`roomCode:${dbRoom.code}`, roomId);
@@ -90,30 +93,28 @@ export default class RoomManager {
     return { id: roomId, ...room };
   }
 
-  // Unirse a room
-  async joinRoom({ roomId, userId, socketId, isCreator=false }) {
+  // busca room en db y jugador, actualiza redis
+  async joinRoom({ roomId, userId, isCreator = false }) {
+    // puedo hacer http
     const room = await this.getRoom(roomId, userId);
-
-    // Unir el socket al canal de la sala
-    this.io.sockets.sockets.get(socketId)?.join(room.code);
-    console.log(`🔗 Socket ${socketId} unido a canal ${room.code}`);
+    if (!room) return null;
 
     if (!room.players.includes(userId)) {
       room.players.push(userId);
-      if (isCreator){
+      if (isCreator) {
         console.log(`🆕 Usuario ${userId} ha creado la sala ${roomId}`);
-      }
-      else{
+      } else {
         console.log(`🚪 Usuario ${userId} ingresó a sala ${roomId}`);
       }
-      this.io.to(room.code).emit("player:joined", {
-        userId,
-        players:room.players,
-        code:room.code
-      });
+
+      // this.io.to(room.code).emit("player:joined", {
+      //   userId,
+      //   players: room.players,
+      //   code: room.code,
+      // });
     } else {
-      console.log(`🔁 Usuario ${userId} se reconectó a sala ${roomId}`)
-      this.io.to(room.code).emit("player:reconnected", {userId})
+      console.log(`🔁 Usuario ${userId} se reconectó a sala ${roomId}`);
+      this.io.to(room.code).emit("player:reconnected", { userId }); // puedo hacer que se devuelva response para avisando que se reconecta, no que se une de nuevo
     }
 
     // Asignar equipo automático
@@ -141,6 +142,7 @@ export default class RoomManager {
 
   // Salir de room
   async leaveRoom({ roomId, userId }) {
+    // puedo hacer http
     const room = await this.getRoom(roomId);
     room.players = room.players.filter((id) => id !== userId);
     room.teams.red = room.teams.red.filter((id) => id !== userId);
@@ -153,13 +155,14 @@ export default class RoomManager {
       teams: JSON.stringify(room.teams),
     });
 
-    this.io.to(room.code).emit("player:left", { userId, players: room.players });
+    this.io.to(room.code).emit("player:left", { userId, players: room.players }); // puedo devolver response http diciendo que se lo saco bien de la room
 
     return room;
   }
 
   // Actualizar estado de room
   async updateRoomStatus({ roomId, status }) {
+    // puedo hacer http como tambien exclusivo de socket
     const room = await this.getRoom(roomId);
     room.status = status;
 
