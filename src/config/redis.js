@@ -62,16 +62,17 @@ class Redis {
   }
 
   async del(key) {
+    console.log("borrando key de Redis", key);
     await this.connectRedis();
     await this.client.del(this._key(key));
   }
 
   // metodos para rooms
   async hSet(key, data, ttl) {
-    console.log("esto es adentro de redis cleint", this._key(key));
     await this.connectRedis();
-    await this.client.hSet(this._key(key), data);
-    if (ttl ?? this.ttl) await this.client.expire(this._key(key), ttl ?? this.ttl);
+    console.log("redisClient.hSet (esto se esta guardando en redis):", this._key(key), data, ttl);
+    await this.client.hSet(this._key(key), data, ttl ?? this.ttl);
+    // if (ttl ?? this.ttl) await this.client.expire(this._key(key), ttl ?? this.ttl);
   }
 
   async hGetAll(key) {
@@ -91,6 +92,6 @@ class Redis {
 
 // muchos redis client para cada cosa
 const tokenCache = new Redis({ ttl: 24 * 3600, prefix: "alias-game:token:" }); // min duracion token 1 dia
-const roomCache = new Redis({ ttl: 6 * 3600, prefix: "alias-game:room:" });
+const roomCache = new Redis({ ttl: 6 * 3600, prefix: "alias-game:room:" }); // code:hSet
 
 export { tokenCache, roomCache };

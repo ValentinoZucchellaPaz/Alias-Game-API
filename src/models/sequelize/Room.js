@@ -24,7 +24,7 @@ Room.init(
       type: DataTypes.TEXT,
       allowNull: false,
     },
-    // Array de RoomUser (se guarda como JSON) -> posible cambio por array de user id
+    // array of obj {id: userId, active: boolean} -- keep track of all joined players
     players: {
       type: DataTypes.JSON,
       allowNull: false,
@@ -51,6 +51,11 @@ Room.init(
       type: DataTypes.JSON,
       allowNull: false,
       defaultValue: [],
+    },
+    public: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
     },
   },
   {

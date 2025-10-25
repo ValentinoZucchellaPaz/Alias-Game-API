@@ -24,9 +24,9 @@ const io = new Server(server, {
 });
 
 // Inicializar RoomManager, RoomController y sockets
-const roomManager = new RoomManager({ redisClient: roomCache, model: Room, io });
-registerRoomSocket(io, roomManager);
-roomController.setRoomManager(roomManager);
+// const roomManager = new RoomManager({ redisClient: roomCache, model: Room, io });
+registerRoomSocket(io);
+// roomController.setRoomManager(roomManager);
 
 server.listen(PORT, async () => {
   await syncDB();

@@ -2,6 +2,7 @@ const form = document.getElementById("form");
 const messageInput = document.getElementById("message-input");
 const roomInput = document.getElementById("room-input");
 const joinRoomButton = document.getElementById("room-button");
+const createRoomButton = document.getElementById("create-room-btn");
 const joinRedButton = document.getElementById("join-red-button");
 const joinBlueButton = document.getElementById("join-blue-button");
 const leaveRoomButton = document.getElementById("leave-room");
@@ -82,7 +83,68 @@ const handleLogin = (e, userNumber) => {
         displayMessage("successfull login");
       } catch (err) {
         console.warn("Failed to decode token for user display", err);
+        displayMessage("Failed to decode token for user display", err);
       }
+
+      // TODOS LOS EVENTOS DEL SOCKET
+
+      // connect to socket server (replace URL if needed)
+      if (socket && socket.connected) socket.disconnect(); // ver si conviene mantener conectado
+      socket = io("http://localhost:4000", { auth: { token: authToken } });
+
+      socket.on("connect", () => {
+        displayMessage(`You've connected with id: ${socket.id}`);
+      });
+
+      // socket.on("connect_error", (err) => {
+      //   displayMessage(`Socket connection error: ${err?.message || err}`);
+      // });
+
+      //player joining feedback
+      socket.on("player:joined", ({ user, players, code }) => {
+        displayMessage(`Player ${user.name} joined the room ${code}`);
+      });
+
+      socket.on("player:reconnected", ({ userId }) => {
+        // <---------------- estudiar esto
+        displayMessage(`Player ${userId} reconnected to the room`);
+        document.getElementById("room-name").textContent = code;
+      });
+
+      //receive message feedback
+      socket.on("chat:message", ({ user, text, timestamp }) => {
+        console.log("me llego un msje");
+        displayMessage(`${user.name} (${timestamp}): ${text}`);
+      });
+
+      //leave room feedback
+      socket.on("player:left", ({ user }) => {
+        displayMessage(`Player ${user.name} left the room`);
+      });
+
+      //host assignation -- not impl
+      socket.on("room:create", ({ code, hostId, players, teams }) => {
+        displayMessage(`You are now the host of room ${code}`);
+        updateTeamList("red", teams.red);
+        updateTeamList("blue", teams.blue);
+        document.getElementById("start-game-button").style.display = "inline-block";
+      });
+
+      // si desde el back me dicen que me salga lo hago con esto
+      socket.on("leave-room-order", async ({ code }) => {
+        console.log("haciendo leave room");
+        try {
+          socket.emit("leave-room", { code: currentRoom, userId: payload?.id });
+          currentRoom = "";
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      socket.on("room:error", ({ message }) => {
+        console.error(message);
+        displayMessage(`Error joining room: ${message}`);
+      });
     } catch (err) {
       console.log(err);
       displayMessage(`Login error: ${err.message}`);
@@ -90,93 +152,77 @@ const handleLogin = (e, userNumber) => {
   })();
 };
 
+createRoomButton.addEventListener("click", async (e) => {
+  e.preventDefault();
+  try {
+    const res = await fetch(`http://localhost:4000/api/rooms`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      displayMessage(`Room creation failed: ${res.status} ${text}`);
+      return;
+    }
+
+    const data = await res.json();
+    // unirme a room
+    socket.emit("join-room", { code: data.code });
+    currentRoom = data.code;
+  } catch (err) {
+    currentRoom = "";
+    displayMessage(`Error joining room: ${err?.message || err}`);
+  }
+});
+
 //join room button handling -- CONNECT TO SOCKET
 joinRoomButton.addEventListener("click", async (e) => {
   e.preventDefault();
-  const room = roomInput.value?.trim();
-  if (!room) return;
+  const roomCode = roomInput.value?.trim();
+  if (!roomCode) return;
 
   if (!authToken) {
     displayMessage("login needed");
     return;
   }
 
-  if (currentRoom === room) {
-    displayMessage(`You already are in room ${room}`);
+  if (currentRoom === roomCode) {
+    // si se desconecta socket esto persiste pero no socket -- ver
+    displayMessage(`You already are in room ${roomCode}`);
     return;
   }
 
   try {
-    const res = await fetch(`http://localhost:4000/api/rooms/${encodeURIComponent(room)}/join`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`,
-      },
-      // body: JSON.stringify({ userId: payload?.id }),
-    });
+    const res = await fetch(
+      `http://localhost:4000/api/rooms/${encodeURIComponent(roomCode)}/join`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
 
     if (!res.ok) {
-      const text = await res.text();
-      displayMessage(`Join room failed: ${res.status} ${text}`);
-      return;
+      const data = await res.json();
+      console.error(data);
+      // displayMessage(`Join room failed: ${res.status} ${data.message}`);
+      throw new Error(data.message);
+      // return;
     }
 
-    // connect to socket server (replace URL if needed)
-    if (socket && socket.connected) socket.disconnect();
-    socket = io("http://localhost:4000", { auth: { token: authToken } });
-
-    socket.on("connect", () => {
-      displayMessage(`You've connected with id: ${socket.id}`);
-      socket.emit("join-room", { code: room, userId: payload?.id });
-      currentRoom = room;
-    });
-
-    socket.on("connect_error", (err) => {
-      displayMessage(`Socket connection error: ${err?.message || err}`);
-    });
-    // TODOS LOS EVENTOS DEL SOCKET
-
-    socket.on("chat:message", ({ user, text, timestamp }) => {
-      console.log("me llego un msje");
-      displayMessage(`${user.name} (${timestamp}): ${text}`);
-    });
-
-    // on connection feedback
-    // socket.on("connect", () => {
-    //   displayMessage(`You've connected with id: ${socket.id}`);
-    // });
-
-    //player joining feedback
-    socket.on("player:joined", ({ user, players, code }) => {
-      displayMessage(`Player ${user.name} joined the room ${code}`);
-    });
-
-    socket.on("player:reconnected", ({ userId }) => {
-      displayMessage(`Player ${userId} reconnected to the room`);
-      document.getElementById("room-name").textContent = code;
-    });
-
-    //receive message feedback
-    socket.on("chat:message", ({ user, text, timestamp }) => {
-      console.log("me llego un msje");
-      displayMessage(`${user.name} (${timestamp}): ${text}`);
-    });
-
-    //leave room feedback
-    socket.on("player:left", ({ userId }) => {
-      displayMessage(`Player ${userId} left the room`);
-    });
-
-    //host assignation
-    socket.on("room:create", ({ code, hostId, players, teams }) => {
-      displayMessage(`You are now the host of room ${code}`);
-      updateTeamList("red", teams.red);
-      updateTeamList("blue", teams.blue);
-      document.getElementById("start-game-button").style.display = "inline-block";
-    });
+    // unirme a room
+    socket.emit("join-room", { code: roomCode });
+    currentRoom = roomCode;
   } catch (err) {
-    displayMessage(`Error joining room: ${err?.message || err}`);
+    console.error(err);
+    currentRoom = "";
+    displayMessage(`Error joining room: ${err?.message}`);
   }
 });
 
@@ -184,14 +230,20 @@ joinRoomButton.addEventListener("click", async (e) => {
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   const message = messageInput.value;
-  const room = roomInput.value;
+  if (!authToken) {
+    displayMessage("login needed");
+    return;
+  }
 
   if (message === "") return;
 
-  if (!currentRoom) return;
-  // socket.emit("send-message", { message, room, sender: socket.id });
+  if (!currentRoom) {
+    displayMessage("You have to join a room");
+    return;
+  }
+
   socket.emit("chat:message", {
-    code: room,
+    code: currentRoom,
     user: payload, // recuperar de session
     text: message,
   });
@@ -201,10 +253,54 @@ form.addEventListener("submit", (e) => {
 });
 
 //leave room button handling
-leaveRoomButton.addEventListener("click", () => {
-  const code = roomInput.value;
-  if (!code) return;
-  socket.emit("leave-room", { code, userId: payload?.id });
+leaveRoomButton.addEventListener("click", async () => {
+  if (!authToken) {
+    displayMessage("login needed");
+    return;
+  }
+
+  if (!currentRoom) {
+    displayMessage("You have to join a room");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `http://localhost:4000/api/rooms/${encodeURIComponent(currentRoom)}/leave`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      displayMessage(`Leave room failed: ${res.status} ${text}`);
+      return;
+    }
+
+    const data = await res.json();
+
+    // salir de room feedback
+    if (data.status == "finished") {
+      socket.emit("chat:message", {
+        code: currentRoom,
+        user: payload, // recuperar de session
+        text: "Room has been finished by host",
+      });
+      // sacar al resto de miembros de la rooom
+      socket.emit("room:terminated", { code: currentRoom });
+    } else {
+      socket.emit("leave-room", { code: currentRoom, userId: payload?.id });
+    }
+    currentRoom = "";
+  } catch (err) {
+    console.log(err);
+    displayMessage(`Error leaving room: ${err?.message}`);
+  }
 });
 
 // ==========================================
@@ -235,6 +331,9 @@ leaveRoomButton.addEventListener("click", () => {
 // });
 
 //info display method
+
+// ==================================================
+
 function displayMessage(message) {
   const div = document.createElement("div");
   div.textContent = message;

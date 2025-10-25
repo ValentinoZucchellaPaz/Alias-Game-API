@@ -10,10 +10,8 @@ export default class RoomManager {
     this.io = io; // Socket.IO instance
   }
 
-  // Crear nueva room
-  // async createRoom({ hostId }) {
   async createRoom({ hostId }) {
-    // puede trabajar solo http
+    // http only - move to controller or service
     const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
     const roomId = uuidv4();
 
@@ -37,13 +35,13 @@ export default class RoomManager {
     // Guardar en DB
     await this.model.create({ id: roomId, ...roomData });
 
-    this.io.to(roomCode).emit("room:create", {
-      // precindible
-      hostId,
-      roomCode,
-      players: [hostId],
-      teams: { red: [hostId], blue: [] },
-    });
+    // this.io.to(roomCode).emit("room:create", {
+    //   // precindible
+    //   hostId,
+    //   roomCode,
+    //   players: [hostId],
+    //   teams: { red: [hostId], blue: [] },
+    // });
 
     return {
       id: roomId,
@@ -55,66 +53,75 @@ export default class RoomManager {
     };
   }
 
-  // Traer room desde Redis o DB
-  async getRoom(codeOrId, userId) {
-    // puede trabajar solo http
-    // problema con redis id /code, con que key lo guardo?
-    let roomId = codeOrId;
+  async getRoom(code) {
+    // get room id from redis, or db if not found
+    const codeKey = `roomCode:${code}`;
+    let roomId = await this.redis.get(codeKey);
+    let dbRoom = null;
+    if (!roomId) {
+      dbRoom = await Room.findOne({ where: { code } });
+      if (!dbRoom) return null;
+      roomId = dbRoom.id;
+      await this.redis.set(codeKey, roomId, 24 * 3600); // save new code:id mapping (24hrs)
+    }
 
-    //Si no es un UUID, asumims que es un codigo
-    if (roomId.length !== 36) {
-      const resolveId = await this.redis.get(`roomCode:${roomId}`);
-      if (resolveId) {
-        roomId = resolveId;
-      } else {
-        //buscar en db como fallback
-        const dbRoom = await Room.findOne({ where: { code: roomId } });
+    // get roomData from redis, or db if not found
+    let room = await this.redis.hGetAll(roomId);
+    if (!room || Object.keys(room).length === 0) {
+      if (!dbRoom) {
+        // if not search already, look db
+        dbRoom = await Room.findOne({ where: { id: roomId } });
         if (!dbRoom) {
-          // const newRoom = await this.createRoom({ hostId: userId, code: roomId });
-          // return { id: newRoom.id, ...newRoom };
+          await this.redis.del(codeKey); // delete mapping for consistency
           return null;
         }
-        roomId = dbRoom.id;
-        await this.redis.set(`roomCode:${dbRoom.code}`, roomId);
       }
+
+      const roomData = {
+        code: dbRoom.code,
+        hostId: dbRoom.hostId,
+        players: JSON.stringify(dbRoom.players),
+        teams: JSON.stringify(dbRoom.teams),
+        globalScore: JSON.stringify(dbRoom.globalScore),
+        games: JSON.stringify(dbRoom.games),
+        status: dbRoom.status,
+        public: dbRoom.public,
+      };
+
+      await this.redis.hSet(roomId, roomData);
+      await this.redis.client.expire(this.redis._key(roomId), this.redis.ttl);
+      room = roomData;
     }
 
-    const room = await this.redis.hGetAll(roomId);
-
-    if (!room || Object.keys(room).length === 0) {
-      throw new Error(`Room ${roomId} not found in Redis`);
+    // parse fields and return info
+    try {
+      room.players = JSON.parse(room.players);
+      room.teams = JSON.parse(room.teams);
+      room.globalScore = JSON.parse(room.globalScore);
+      room.games = JSON.parse(room.games);
+    } catch (err) {
+      console.error("⚠️ Error parsing room JSON data:", err.message);
+      return null; // here I can delete and retry but there's a chance of inf loop
     }
 
-    room.players = JSON.parse(room.players);
-    room.teams = JSON.parse(room.teams);
-    room.globalScore = JSON.parse(room.globalScore);
-    room.games = JSON.parse(room.games);
+    await this.redis.client.expire(this.redis._key(codeKey), 24 * 3600);
+    await this.redis.client.expire(this.redis._key(roomId), this.redis.ttl);
 
     return { id: roomId, ...room };
   }
 
   // busca room en db y jugador, actualiza redis
-  async joinRoom({ roomId, userId, isCreator = false }) {
-    // puedo hacer http
-    const room = await this.getRoom(roomId, userId);
+  async joinRoom({ roomCode, userId }) {
+    // http only
+    const room = await this.getRoom(roomCode);
     if (!room) return null;
 
     if (!room.players.includes(userId)) {
       room.players.push(userId);
-      if (isCreator) {
-        console.log(`🆕 Usuario ${userId} ha creado la sala ${roomId}`);
-      } else {
-        console.log(`🚪 Usuario ${userId} ingresó a sala ${roomId}`);
-      }
-
-      // this.io.to(room.code).emit("player:joined", {
-      //   userId,
-      //   players: room.players,
-      //   code: room.code,
-      // });
     } else {
-      console.log(`🔁 Usuario ${userId} se reconectó a sala ${roomId}`);
-      this.io.to(room.code).emit("player:reconnected", { userId }); // puedo hacer que se devuelva response para avisando que se reconecta, no que se une de nuevo
+      // console.log(`🔁 Usuario ${userId} se reconectó a sala ${roomId}`);
+      //this.io.to(room.code).emit("player:reconnected", { userId }); // puedo hacer que se devuelva response para avisando que se reconecta, no que se une de nuevo
+      room.reconnected = true;
     }
 
     // Asignar equipo automático
@@ -131,8 +138,7 @@ export default class RoomManager {
       room.teams[team].push(userId);
     }
 
-    // Guardar cambios en Redis
-    await this.redis.hSet(roomId, {
+    await this.redis.hSet(room.id, {
       players: JSON.stringify(room.players),
       teams: JSON.stringify(room.teams),
     });
@@ -141,21 +147,21 @@ export default class RoomManager {
   }
 
   // Salir de room
-  async leaveRoom({ roomId, userId }) {
-    // puedo hacer http
-    const room = await this.getRoom(roomId);
+  async leaveRoom({ roomCode, userId }) {
+    // http only
+    const room = await this.getRoom(roomCode);
     room.players = room.players.filter((id) => id !== userId);
     room.teams.red = room.teams.red.filter((id) => id !== userId);
     room.teams.blue = room.teams.blue.filter((id) => id !== userId);
 
-    console.log(`🧹 Usuario ${userId} eliminado de sala ${roomId}`);
+    console.log(`🧹 Usuario ${userId} eliminado de sala ${roomCode}`);
 
-    await this.redis.hSet(roomId, {
+    await this.redis.hSet(room.id, {
       players: JSON.stringify(room.players),
       teams: JSON.stringify(room.teams),
     });
 
-    this.io.to(room.code).emit("player:left", { userId, players: room.players }); // puedo devolver response http diciendo que se lo saco bien de la room
+    // this.io.to(room.code).emit("player:left", { userId, players: room.players }); // puedo devolver response http diciendo que se lo saco bien de la room
 
     return room;
   }
@@ -183,12 +189,13 @@ export default class RoomManager {
       await this.redis.del(roomId);
     }
 
-    this.io.to(room.code).emit("room:status", { status });
+    // this.io.to(room.code).emit("room:status", { status });
     return room;
   }
 
   // Enviar mensaje de chat
   sendMessage({ roomCode, user, text, socket }) {
+    // unico de socket
     const message = { user, text, timestamp: new Date().toISOString() };
     socket.broadcast.to(roomCode).emit("chat:message", message);
   }
