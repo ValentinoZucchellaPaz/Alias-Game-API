@@ -2,15 +2,11 @@ import express from "express";
 import app from "./app.js";
 import { syncDB } from "./models/sequelize/index.js";
 import { Server } from "socket.io";
-import { roomCache, tokenCache } from "./config/redis.js";
+import { RedisClientSingleton } from "./config/redis.js";
 import { createServer } from "http";
 import path from "path";
-import { Room } from "./models/sequelize/index.js";
 import { fileURLToPath } from "url";
-// import registerRoomSocket from "./sockets/default.js";
 import registerRoomSocket from "./sockets/registerRoomSocket.js";
-import RoomManager from "./sockets/RoomManager.js";
-import * as roomController from "./controllers/room.controller.js";
 
 // servir client
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -23,14 +19,10 @@ const io = new Server(server, {
   cors: { origin: "*" },
 });
 
-// Inicializar RoomManager, RoomController y sockets
-// const roomManager = new RoomManager({ redisClient: roomCache, model: Room, io });
 registerRoomSocket(io);
-// roomController.setRoomManager(roomManager);
 
 server.listen(PORT, async () => {
   await syncDB();
-  await tokenCache.connectRedis();
-  await roomCache.connectRedis();
+  await RedisClientSingleton.getInstance(); // inicializa singleton
   console.log(`Server running on port http://localhost:${PORT}`);
 });

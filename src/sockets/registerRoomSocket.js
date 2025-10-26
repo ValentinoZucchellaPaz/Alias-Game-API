@@ -45,12 +45,7 @@ export default function registerRoomSocket(io) {
         // salir de todas las rooms excepto la propia del socket y la room objetivo
         for (const r of socket.rooms) {
           if (r === socket.id || r === code) continue;
-          try {
-            await roomService.leaveRoom({ roomCode: r, userId: socket.userId });
-            socket.leave(r);
-          } catch (err) {
-            console.error(`Error leaving room ${r}:`, err);
-          }
+          await roomService.leaveRoom({ roomCode: r, userId: socket.userId });
         }
         socket.join(code);
         console.log(socket.rooms);

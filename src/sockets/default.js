@@ -156,9 +156,9 @@
 import Room from "../models/sequelize/Room.js";
 import jwt from "../utils/jwt.js";
 import RoomManager from "./RoomManager.js";
-import redisClient from "../config/redis.js";
+import { roomCache } from "../config/redis.js";
 export default function registerRoomSocket(io) {
-  const roomManager = new RoomManager({ redis: redisClient, model: Room });
+  const roomManager = new RoomManager({ redis: roomCache, model: Room });
 
   //middleware de autenticacion de tokens;
   io.use((socket, next) => {
