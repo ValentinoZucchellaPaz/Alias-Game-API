@@ -1,10 +1,3 @@
-// src/controllers/roomController.js
-// let roomManager;
-
-// export const setRoomManager = (manager) => {
-//   roomManager = manager;
-// };
-
 import roomService from "../services/room.service.js";
 
 export const createRoom = async (req, res) => {
@@ -36,5 +29,11 @@ export const updateRoomStatus = async (req, res) => {
   const { code } = req.params;
   const { status } = req.body;
   const room = await roomService.updateRoomStatus({ roomCode: code, status });
+  res.json(room);
+};
+
+export const getRoomByCode = async (req, res) => {
+  const { code } = req.params;
+  const room = await roomService.getRoom(code);
   res.json(room);
 };

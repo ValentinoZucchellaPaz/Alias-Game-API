@@ -116,13 +116,14 @@ async function joinRoom({ roomCode, userId, userName }) {
 }
 
 async function leaveRoom({ roomCode, userId, userName }) {
-  // checks room players, mark as inactive, if userId==hostId close room, save info and emit event
+  // checks room players, mark as inactive, if there's no one active close room, save info and emit event
   const room = await getRoom(roomCode);
 
   const player = room.players.find((p) => p.id === userId); // players: [{id, active}]
   if (!player) throw new ConflictError(`User ${userId} is not in room ${roomCode}`);
   player.active = false;
-  if (player.id == room.hostId) {
+
+  if (room.players.every((p) => p.active === false)) {
     room.status = "finished";
     await Room.update(
       {
@@ -145,6 +146,7 @@ async function leaveRoom({ roomCode, userId, userName }) {
 
     return room;
   }
+
   room.teams.red = room.teams.red.filter((id) => id !== userId); // en teams se guarda solo id
   room.teams.blue = room.teams.blue.filter((id) => id !== userId);
 
