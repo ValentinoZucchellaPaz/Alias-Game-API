@@ -1,10 +1,11 @@
-import { roomCache } from "../config/redis.js";
+import { roomCache, socketCache } from "../config/redis.js";
 import { Room } from "../models/sequelize/index.js";
-import { AppError } from "../utils/errors.js";
+import { SocketEventEmitter } from "../sockets/SocketEventEmmiter.js";
+import { AppError, ConflictError } from "../utils/errors.js";
 import { v4 as uuidv4 } from "uuid";
 
-async function createRoom({ hostId }) {
-  // http only - move to controller or service
+async function createRoom({ hostId, hostName }) {
+  // create room in db, save in redis and emit socket event to join room
   const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
   const roomId = uuidv4();
 
@@ -12,13 +13,13 @@ async function createRoom({ hostId }) {
     id: roomId,
     code: roomCode,
     hostId,
-    players: [{ id: hostId, active: true }],
+    players: [{ id: hostId, active: true }], // TODO: do i save socketId or userId, or both?
     teams: { red: [hostId], blue: [] },
     globalScore: { red: 0, blue: 0 },
     games: [],
     status: "waiting",
   };
-  // Guardar en DB
+
   await Room.create({ ...roomData });
 
   const copy = JSON.parse(JSON.stringify(roomData));
@@ -27,14 +28,20 @@ async function createRoom({ hostId }) {
   copy.globalScore = JSON.stringify(copy.globalScore);
   copy.games = JSON.stringify(copy.games);
 
-  // Guardar en Redis usando code como clave principal
   await roomCache.hSet(roomCode, copy);
 
+  await SocketEventEmitter.joinRoom(roomCode, hostId, {
+    userName: hostName,
+    teams: roomData.teams,
+    players: roomData.teams,
+  });
+
+  // TODO: if socket connection failed, how do I handle info persistency?
   return roomData;
 }
 
 async function getRoom(code) {
-  // get roomData from redis, or db if not found
+  // get roomData from redis, or db if not found (create in redis if found)
   let room = await roomCache.hGetAll(code);
   let dbRoom = null;
   if (!room || Object.keys(room).length === 0) {
@@ -53,9 +60,8 @@ async function getRoom(code) {
       status: dbRoom.status,
       public: dbRoom.public ? "true" : "false",
     };
-    console.log("getRoom data que viene de db", dbRoom);
     await roomCache.hSet(code, roomData, roomCache.ttl);
-    room = await roomCache.hGetAll(code);
+    room = await roomCache.hGetAll(code); // redis retry
   }
 
   room.players = JSON.parse(room.players);
@@ -63,17 +69,17 @@ async function getRoom(code) {
   room.globalScore = JSON.parse(room.globalScore);
   room.games = JSON.parse(room.games);
 
-  console.log("getRoom (parsed): ", room);
   return room;
 }
 
-// busca room en db y jugador, actualiza redis
-async function joinRoom({ roomCode, userId }) {
+async function joinRoom({ roomCode, userId, userName }) {
+  // checks room players, if OK join new player and assign team, save info and emit event
+  // TODO: do i have to check if player (userId) exists?
   const room = await getRoom(roomCode);
   const playerInRoom = room.players.find((p) => p.id == userId);
   if (playerInRoom) {
     if (playerInRoom.active) {
-      throw new AppError("user already in the room");
+      throw new AppError("User already in the room");
     }
     playerInRoom.active = true;
     room.reconnected = true;
@@ -81,7 +87,7 @@ async function joinRoom({ roomCode, userId }) {
     room.players.push({ id: userId, active: true });
   }
 
-  // Asignar equipo automático
+  // auto assign team
   if (
     room.teams &&
     Array.isArray(room.teams.red) &&
@@ -100,19 +106,22 @@ async function joinRoom({ roomCode, userId }) {
     teams: JSON.stringify(room.teams),
   });
 
+  await SocketEventEmitter.joinRoom(roomCode, userId, {
+    userName,
+    players: room.players,
+    teams: room.teams,
+  });
+
   return room;
 }
 
-// Salir de room
-async function leaveRoom({ roomCode, userId }) {
+async function leaveRoom({ roomCode, userId, userName }) {
+  // checks room players, mark as inactive, if userId==hostId close room, save info and emit event
   const room = await getRoom(roomCode);
 
-  // Marcar el player como inactive (no eliminarlo del array) -- mejorar
-  const player = room.players.find((p) => p.id === userId); // en players se guarda {id, active}
-  if (player) {
-    player.active = false;
-  }
-  // si el que se va es host, cierra room
+  const player = room.players.find((p) => p.id === userId); // players: [{id, active}]
+  if (!player) throw new ConflictError(`User ${userId} is not in room ${roomCode}`);
+  player.active = false;
   if (player.id == room.hostId) {
     room.status = "finished";
     await Room.update(
@@ -126,6 +135,14 @@ async function leaveRoom({ roomCode, userId }) {
       { where: { code: room.code } }
     );
     await roomCache.del(room.code);
+
+    // make all users of room leave room
+    await SocketEventEmitter.closeRoom(roomCode, userId, {
+      userName,
+      reason: "Host left",
+      globalScore: room.globalScore,
+    });
+
     return room;
   }
   room.teams.red = room.teams.red.filter((id) => id !== userId); // en teams se guarda solo id
@@ -134,6 +151,10 @@ async function leaveRoom({ roomCode, userId }) {
   await roomCache.hSet(room.code, {
     players: JSON.stringify(room.players),
     teams: JSON.stringify(room.teams),
+  });
+
+  await SocketEventEmitter.leaveRoom(roomCode, userId, {
+    userName,
   });
 
   return room;

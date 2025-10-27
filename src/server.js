@@ -7,6 +7,7 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import registerRoomSocket from "./sockets/registerRoomSocket.js";
+import { SocketEventEmitter } from "./sockets/SocketEventEmmiter.js";
 
 // servir client
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -20,6 +21,7 @@ const io = new Server(server, {
 });
 
 registerRoomSocket(io);
+SocketEventEmitter.init(io);
 
 server.listen(PORT, async () => {
   await syncDB();

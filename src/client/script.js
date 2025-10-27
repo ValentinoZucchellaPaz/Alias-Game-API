@@ -96,19 +96,13 @@ const handleLogin = (e, userNumber) => {
         displayMessage(`You've connected with id: ${socket.id}`);
       });
 
-      // socket.on("connect_error", (err) => {
-      //   displayMessage(`Socket connection error: ${err?.message || err}`);
-      // });
-
-      //player joining feedback
-      socket.on("player:joined", ({ user, players, code }) => {
-        displayMessage(`Player ${user.name} joined the room ${code}`);
+      socket.on("connect_error", (err) => {
+        displayMessage(`Socket connection error: ${err?.message || err}`);
       });
 
-      socket.on("player:reconnected", ({ userId }) => {
-        // <---------------- estudiar esto
-        displayMessage(`Player ${userId} reconnected to the room`);
-        document.getElementById("room-name").textContent = code;
+      //player joining feedback
+      socket.on("player:joined", ({ userId, userName, roomCode }) => {
+        displayMessage(`Player ${userName} joined the room ${roomCode}`);
       });
 
       //receive message feedback
@@ -118,32 +112,13 @@ const handleLogin = (e, userNumber) => {
       });
 
       //leave room feedback
-      socket.on("player:left", ({ user }) => {
-        displayMessage(`Player ${user.name} left the room`);
+      socket.on("player:left", ({ userId, userName }) => {
+        displayMessage(`Player ${userName} left the room`);
       });
 
-      //host assignation -- not impl
-      socket.on("room:create", ({ code, hostId, players, teams }) => {
-        displayMessage(`You are now the host of room ${code}`);
-        updateTeamList("red", teams.red);
-        updateTeamList("blue", teams.blue);
-        document.getElementById("start-game-button").style.display = "inline-block";
-      });
-
-      // si desde el back me dicen que me salga lo hago con esto
-      socket.on("leave-room-order", async ({ code }) => {
-        console.log("haciendo leave room");
-        try {
-          socket.emit("leave-room", { code: currentRoom, userId: payload?.id });
-          currentRoom = "";
-        } catch (err) {
-          console.error(err);
-        }
-      });
-
-      socket.on("room:error", ({ message }) => {
-        console.error(message);
-        displayMessage(`Error joining room: ${message}`);
+      socket.on("room:close", ({ hostUserId, roomCode, userName }) => {
+        currentRoom = "";
+        displayMessage(`Closing room ${roomCode}, host ${userName} left`);
       });
     } catch (err) {
       console.log(err);
@@ -170,8 +145,7 @@ createRoomButton.addEventListener("click", async (e) => {
     }
 
     const data = await res.json();
-    // unirme a room
-    socket.emit("join-room", { code: data.code });
+    console.log("room data created", data);
     currentRoom = data.code;
   } catch (err) {
     currentRoom = "";
@@ -211,13 +185,11 @@ joinRoomButton.addEventListener("click", async (e) => {
     if (!res.ok) {
       const data = await res.json();
       console.error(data);
-      // displayMessage(`Join room failed: ${res.status} ${data.message}`);
       throw new Error(data.message);
       // return;
     }
 
     // unirme a room
-    socket.emit("join-room", { code: roomCode });
     currentRoom = roomCode;
   } catch (err) {
     console.error(err);
@@ -282,20 +254,6 @@ leaveRoomButton.addEventListener("click", async () => {
       return;
     }
 
-    const data = await res.json();
-
-    // salir de room feedback
-    if (data.status == "finished") {
-      socket.emit("chat:message", {
-        code: currentRoom,
-        user: payload, // recuperar de session
-        text: "Room has been finished by host",
-      });
-      // sacar al resto de miembros de la rooom
-      socket.emit("room:terminated", { code: currentRoom });
-    } else {
-      socket.emit("leave-room", { code: currentRoom, userId: payload?.id });
-    }
     currentRoom = "";
   } catch (err) {
     console.log(err);
@@ -370,11 +328,6 @@ function resetRoomUI() {
   document.querySelector(".no-team-list").innerHTML = "";
   document.getElementById("start-game-button").style.display = "none";
 }
-
-// document.getElementById("start-game-button").addEventListener("click", () => {
-//   if (!currentRoom) return;
-//   socket.emit("start-game", { room: currentRoom });
-// });
 
 function getUserPayloadFromToken(token) {
   const payload = token.split(".")[1];

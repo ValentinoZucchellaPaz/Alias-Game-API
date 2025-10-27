@@ -93,7 +93,7 @@ class Redis {
     await this.init();
     console.log("redisClient.hSet (esto se esta guardando en redis):", this._key(key), data, ttl);
     await this.client.hSet(this._key(key), data, ttl ?? this.ttl);
-    // if (ttl ?? this.ttl) await this.client.expire(this._key(key), ttl ?? this.ttl);
+    if (ttl ?? this.ttl) await this.client.expire(this._key(key), ttl ?? this.ttl);
   }
 
   async hGetAll(key) {
@@ -106,5 +106,6 @@ class Redis {
 // muchos redis client para cada cosa
 const tokenCache = new Redis({ ttl: 24 * 3600, prefix: "alias-game:token:" }); // min duracion token 1 dia
 const roomCache = new Redis({ ttl: 6 * 3600, prefix: "alias-game:room:" }); // code:hSet
+const socketCache = new Redis({ ttl: 6 * 3600, prefix: "alias-game:userSocket:" }); // userId:socketId
 
-export { tokenCache, roomCache, RedisClientSingleton };
+export { tokenCache, roomCache, socketCache, RedisClientSingleton };
