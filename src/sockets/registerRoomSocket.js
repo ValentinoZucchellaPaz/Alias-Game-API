@@ -39,18 +39,20 @@ export default function registerRoomSocket(io) {
         // Recuperar todas las rooms del socket (excepto la propia del socket)
         // Llamar al service para actualizar DB/Redis y emitir evento
         const roomCode = socket.currentRoom;
-        const userId = socket.userId;
-        const userName = socket.userName;
-        await roomService.leaveRoom({
-          roomCode,
-          userId: socket.userId,
-          userName: socket.userName,
-        });
+        if (roomCode) {
+          const userId = socket.userId;
+          const userName = socket.userName;
+          await roomService.leaveRoom({
+            roomCode,
+            userId: socket.userId,
+            userName: socket.userName,
+          });
 
-        io.to(roomCode).emit("player:left", {
-          userId,
-          userName,
-        });
+          io.to(roomCode).emit("player:left", {
+            userId,
+            userName,
+          });
+        }
 
         // Limpiar mapping de Redis
         await socketCache.del(socket.userId);
