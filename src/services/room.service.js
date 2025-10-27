@@ -76,6 +76,14 @@ async function joinRoom({ roomCode, userId, userName }) {
   // checks room players, if OK join new player and assign team, save info and emit event
   // TODO: do i have to check if player (userId) exists?
   const room = await getRoom(roomCode);
+
+  // check if room is full -> what is max cap?
+  const MAX_PLAYER_PER_ROOM = 12;
+  const activePlayers = room.players.map((p) => {
+    if (p.active) return p.id;
+  });
+  if (activePlayers.length > MAX_PLAYER_PER_ROOM) throw new AppError("This room is full");
+
   const playerInRoom = room.players.find((p) => p.id == userId);
   if (playerInRoom) {
     if (playerInRoom.active) {
@@ -163,31 +171,31 @@ async function leaveRoom({ roomCode, userId, userName }) {
 }
 
 // Actualizar estado de room
-async function updateRoomStatus({ code, status }) {
-  // puedo hacer http como tambien exclusivo de socket
-  const room = await getRoom(code);
-  room.status = status;
+// async function updateRoomStatus({ code, status }) {
+//   // puedo hacer http como tambien exclusivo de socket
+//   const room = await getRoom(code);
+//   room.status = status;
 
-  // JSON.stringigy a arrays y poner active como string antes de mandar a redis
-  await roomCache.hSet(code, { status });
+//   // JSON.stringigy a arrays y poner active como string antes de mandar a redis
+//   await roomCache.hSet(code, { status });
 
-  // Si terminó la partida, sincronizar DB
-  if (status === "finished") {
-    await this.model.update(
-      {
-        players: room.players,
-        teams: room.teams,
-        globalScore: room.globalScore,
-        games: room.games,
-        status: room.status,
-      },
-      { where: { code } }
-    );
-    await roomCache.del(code);
-  }
+//   // Si terminó la partida, sincronizar DB
+//   if (status === "finished") {
+//     await this.model.update(
+//       {
+//         players: room.players,
+//         teams: room.teams,
+//         globalScore: room.globalScore,
+//         games: room.games,
+//         status: room.status,
+//       },
+//       { where: { code } }
+//     );
+//     await roomCache.del(code);
+//   }
 
-  // this.io.to(room.code).emit("room:status", { status });
-  return room;
-}
+//   // this.io.to(room.code).emit("room:status", { status });
+//   return room;
+// }
 
-export default { createRoom, getRoom, joinRoom, updateRoomStatus, leaveRoom };
+export default { createRoom, getRoom, joinRoom, leaveRoom };
