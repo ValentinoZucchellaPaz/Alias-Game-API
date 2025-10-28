@@ -1,7 +1,6 @@
 import { socketCache } from "../config/redis.js";
 import roomService from "../services/room.service.js";
 import jwt from "../utils/jwt.js";
-import { SocketEventEmitter } from "./SocketEventEmmiter.js";
 
 // src/sockets/registerRoomSocket.js
 /**

@@ -107,5 +107,6 @@ class Redis {
 const tokenCache = new Redis({ ttl: 24 * 3600, prefix: "alias-game:token:" }); // min duracion token 1 dia
 const roomCache = new Redis({ ttl: 6 * 3600, prefix: "alias-game:room:" }); // code:hSet
 const socketCache = new Redis({ ttl: 6 * 3600, prefix: "alias-game:userSocket:" }); // userId:socketId
+const healthTestCache = new Redis({ ttl: 600, prefix: "health:" });
 
-export { tokenCache, roomCache, socketCache, RedisClientSingleton };
+export { tokenCache, roomCache, socketCache, RedisClientSingleton, healthTestCache };

@@ -1,5 +1,5 @@
 import { Room } from "../models/sequelize/index.js";
-import { roomCache, tokenCache } from "../config/redis.js";
+import { roomCache } from "../config/redis.js";
 
 /**
  * Limpia todas las keys de Redis con el prefijo de la instancia pasada
@@ -33,7 +33,7 @@ export async function resetDevState() {
   }
 
   try {
-    await clearRedisPrefix(roomCache);
+    await clearCacheByPrefix(roomCache);
     await clearRoomsTable();
   } catch (err) {
     console.error("❌ Error al resetear estado de desarrollo:", err);

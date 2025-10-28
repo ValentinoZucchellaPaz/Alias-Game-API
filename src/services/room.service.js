@@ -1,4 +1,4 @@
-import { roomCache, socketCache } from "../config/redis.js";
+import { roomCache } from "../config/redis.js";
 import { Room } from "../models/sequelize/index.js";
 import { SocketEventEmitter } from "../sockets/SocketEventEmmiter.js";
 import { AppError, ConflictError } from "../utils/errors.js";
