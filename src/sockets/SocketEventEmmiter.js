@@ -119,6 +119,12 @@ export class SocketEventEmitter {
     }
   }
 
+  static async teamState(roomCode, teams) {
+    const io = SocketEventEmitter.getIO();
+    io.to(roomCode).emit("team-state", teams);
+    console.log(`📢 Emitted team-state for in room=${roomCode}`);
+  }
+
   /**
    * Look for socketId in Redis w userId and retrieve socket instance
    * @param {string|number} userId

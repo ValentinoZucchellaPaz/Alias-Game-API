@@ -6,25 +6,10 @@ const createRoomButton = document.getElementById("create-room-btn");
 const joinRedButton = document.getElementById("join-red-button");
 const joinBlueButton = document.getElementById("join-blue-button");
 const leaveRoomButton = document.getElementById("leave-room");
+const startButton = document.getElementById("start-game-button");
 
 let socket = null;
 let currentRoom = null;
-
-//join red team event triggering
-// joinRedButton.addEventListener("click", () => {
-//   if (!currentRoom) return;
-//   socket.emit("join-team", { room: currentRoom, team: "red" }, (response) => {
-//     displayMessage(response);
-//   });
-// });
-
-//join blue team event triggering
-// joinBlueButton.addEventListener("click", () => {
-//   if (!currentRoom) return;
-//   socket.emit("join-team", { room: currentRoom, team: "blue" }, (response) => {
-//     displayMessage(response);
-//   });
-// });
 
 // login button (hardcoded)
 let authToken = null;
@@ -116,6 +101,12 @@ const handleLogin = (e, userNumber) => {
         displayMessage(`Player ${userName} left the room`);
       });
 
+      //update teams' information
+      socket.on("team-state", ({ red, blue }) => {
+        updateTeamList("red", red);
+        updateTeamList("blue", blue);
+      });
+
       socket.on("room:close", ({ hostUserId, roomCode, userName }) => {
         currentRoom = "";
         displayMessage(`Closing room ${roomCode}, host ${userName} left`);
@@ -130,6 +121,11 @@ const handleLogin = (e, userNumber) => {
 createRoomButton.addEventListener("click", async (e) => {
   e.preventDefault();
   try {
+    if (currentRoom) {
+      displayMessage("To create a room you must leave this one");
+      return;
+    }
+
     const res = await fetch(`http://localhost:4000/api/rooms`, {
       method: "POST",
       headers: {
@@ -147,6 +143,7 @@ createRoomButton.addEventListener("click", async (e) => {
     const data = await res.json();
     console.log("room data created", data);
     currentRoom = data.code;
+    document.getElementById("room-name").textContent = currentRoom;
   } catch (err) {
     currentRoom = "";
     displayMessage(`Error joining room: ${err?.message || err}`);
@@ -191,6 +188,7 @@ joinRoomButton.addEventListener("click", async (e) => {
 
     // unirme a room
     currentRoom = roomCode;
+    document.getElementById("room-name").textContent = currentRoom;
   } catch (err) {
     console.error(err);
     currentRoom = "";
@@ -255,22 +253,29 @@ leaveRoomButton.addEventListener("click", async () => {
     }
 
     currentRoom = "";
+    displayMessage("You've left the room");
+    resetRoomUI();
   } catch (err) {
     console.log(err);
     displayMessage(`Error leaving room: ${err?.message}`);
   }
 });
 
+// join red team event triggering
+joinRedButton.addEventListener("click", () => {
+  if (!currentRoom) return;
+  socket.emit("join-team", { roomCode: currentRoom, team: "red", userId: payload.id });
+});
+
+// join blue team event triggering
+joinBlueButton.addEventListener("click", () => {
+  if (!currentRoom) return;
+  socket.emit("join-team", { roomCode: currentRoom, team: "blue", userId: payload.id });
+});
+
 // ==========================================
 // sockets
 
-// //update teams' information
-// socket.on("team-state", ({ red, blue, unassigned }) => {
-//   updateTeamList("red", red);
-//   updateTeamList("blue", blue);
-//   updateTeamList("no-team", unassigned);
-
-//   const startButton = document.getElementById("start-game-button");
 //   const isHost = startButton.style.display !== "none";
 //   const canStart = red.length >= 2 && blue.length >= 2;
 
@@ -300,10 +305,7 @@ function displayMessage(message) {
 
 //update the interface with the list of players in teams (or without team)
 function updateTeamList(team, players) {
-  const container =
-    team === "no-team"
-      ? document.querySelector(".no-team-list")
-      : document.getElementById(`${team}-team-list`);
+  const container = document.getElementById(`${team}-team-list`);
 
   if (!container || !Array.isArray(players)) {
     console.warn(`Invalid team list for '${team}'`);
@@ -325,7 +327,6 @@ function resetRoomUI() {
   document.getElementById("message-container").innerHTML = "";
   document.getElementById("red-team-list").innerHTML = "";
   document.getElementById("blue-team-list").innerHTML = "";
-  document.querySelector(".no-team-list").innerHTML = "";
   document.getElementById("start-game-button").style.display = "none";
 }
 

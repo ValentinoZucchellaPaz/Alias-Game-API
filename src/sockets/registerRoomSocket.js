@@ -33,6 +33,14 @@ export default function registerRoomSocket(io) {
         .emit("chat:message", { user, text, timestamp: new Date().toISOString() });
     });
 
+    socket.on("join-team", async ({ roomCode, team, userId }) => {
+      try {
+        await roomService.updateTeams(roomCode, team, userId);
+      } catch (error) {
+        console.log("error cambiando de equipo", err);
+      }
+    });
+
     socket.on("disconnect", async (reason) => {
       try {
         // Recuperar todas las rooms del socket (excepto la propia del socket)

@@ -6,6 +6,9 @@ import { v4 as uuidv4 } from "uuid";
 
 async function createRoom({ hostId, hostName }) {
   // create room in db, save in redis and emit socket event to join room
+
+  // si host ya esta en otra room no puede crear una nueva
+
   const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
   const roomId = uuidv4();
 
@@ -35,6 +38,7 @@ async function createRoom({ hostId, hostName }) {
     teams: roomData.teams,
     players: roomData.teams,
   });
+  await SocketEventEmitter.teamState(roomCode, roomData.teams);
 
   // TODO: if socket connection failed, how do I handle info persistency?
   return roomData;
@@ -119,6 +123,7 @@ async function joinRoom({ roomCode, userId, userName }) {
     players: room.players,
     teams: room.teams,
   });
+  await SocketEventEmitter.teamState(roomCode, room.teams);
 
   return room;
 }
@@ -166,6 +171,31 @@ async function leaveRoom({ roomCode, userId, userName }) {
   await SocketEventEmitter.leaveRoom(roomCode, userId, {
     userName,
   });
+  await SocketEventEmitter.teamState(roomCode, room.teams);
+
+  return room;
+}
+
+async function updateTeams(roomCode, team, userId) {
+  const room = await getRoom(roomCode);
+
+  // validaciones
+  const player = room.players.find((p) => p.id === userId); // players: [{id, active}]
+  if (!player || !player.active)
+    throw new ConflictError(`User ${userId} is not in room ${roomCode}`);
+
+  if (team == "red") {
+    room.teams.blue.filter((id) => id != userId);
+    room.teams.red.push(userId);
+  } else if (team == "blue") {
+    room.teams.red.filter((id) => id != userId);
+    room.teams.blue.push(userId);
+  }
+  await roomCache.hSet(room.code, {
+    teams: JSON.stringify(room.teams),
+  });
+
+  await SocketEventEmitter.teamState(roomCode, room.teams);
 
   return room;
 }
@@ -198,4 +228,4 @@ async function leaveRoom({ roomCode, userId, userName }) {
 //   return room;
 // }
 
-export default { createRoom, getRoom, joinRoom, leaveRoom };
+export default { createRoom, getRoom, joinRoom, leaveRoom, updateTeams };
