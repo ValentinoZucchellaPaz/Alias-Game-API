@@ -37,3 +37,8 @@ export const getRoomByCode = async (req, res) => {
   const room = await roomService.getRoom(code);
   res.json(room);
 };
+
+export const getRooms = async (req, res) => {
+  const rooms = await roomService.getRooms();
+  res.json(rooms);
+};

@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createRoom,
   getRoomByCode,
+  getRooms,
   joinRoom,
   leaveRoom,
   updateRoomStatus,
@@ -16,5 +17,6 @@ router.post("/:code/join", extractTokens, getSession, joinRoom);
 router.delete("/:code/leave", extractTokens, getSession, leaveRoom);
 router.patch("/:code/status", extractTokens, getSession, updateRoomStatus);
 router.get("/:code", getRoomByCode);
+router.get("/", getRooms);
 
 export default router;

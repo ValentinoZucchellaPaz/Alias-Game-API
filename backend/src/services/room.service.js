@@ -185,10 +185,10 @@ async function updateTeams(roomCode, team, userId) {
     throw new ConflictError(`User ${userId} is not in room ${roomCode}`);
 
   if (team == "red") {
-    room.teams.blue.filter((id) => id != userId);
+    room.teams.blue = room.teams.blue.filter((id) => id != userId);
     room.teams.red.push(userId);
   } else if (team == "blue") {
-    room.teams.red.filter((id) => id != userId);
+    room.teams.red = room.teams.red.filter((id) => id != userId);
     room.teams.blue.push(userId);
   }
   await roomCache.hSet(room.code, {
@@ -198,6 +198,17 @@ async function updateTeams(roomCode, team, userId) {
   await SocketEventEmitter.teamState(roomCode, room.teams);
 
   return room;
+}
+
+// Obtener las primeras `limit` rooms con status "waiting" desde la base de datos
+async function getRooms(limit = 10) {
+  const rooms = await Room.findAll({
+    where: { status: "waiting" },
+    order: [["createdAt", "ASC"]],
+    limit,
+  });
+
+  return rooms.map((r) => r.get({ plain: true }));
 }
 
 // Actualizar estado de room
@@ -228,4 +239,4 @@ async function updateTeams(roomCode, team, userId) {
 //   return room;
 // }
 
-export default { createRoom, getRoom, joinRoom, leaveRoom, updateTeams };
+export default { createRoom, getRoom, joinRoom, leaveRoom, updateTeams, getRooms };

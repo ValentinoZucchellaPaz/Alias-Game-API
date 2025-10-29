@@ -1,5 +1,6 @@
 import { socketCache } from "../config/redis.js";
 import roomService from "../services/room.service.js";
+import { AppError } from "../utils/errors.js";
 import jwt from "../utils/jwt.js";
 
 // src/sockets/registerRoomSocket.js
@@ -9,7 +10,7 @@ import jwt from "../utils/jwt.js";
  */
 export default function registerRoomSocket(io) {
   // middleware
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error("No token in handshake auth"));
 
@@ -20,17 +21,22 @@ export default function registerRoomSocket(io) {
     socket.userName = payload.name;
     socket.userRole = payload.role;
 
+    // antes de esto, veo de que no haya ningun otro socket abierto del mismo usuario, si lo hay y no me dijeron q lo sobreescriba lo dejo
+    const overrideSocket = socket.handshake.auth?.override;
+    const prevSocket = await socketCache.get(socket.userId);
+    if (prevSocket && !overrideSocket)
+      return next(new AppError(`ya existe una conexion abierta para este user ${socket.userId}`));
     next();
   });
 
   io.on("connection", (socket) => {
     console.log(`Socket conectado: ${socket.id}`);
+
     socketCache.set(socket.userId, socket.id);
 
     socket.on("chat:message", ({ code, user, text }) => {
-      socket.broadcast
-        .to(code)
-        .emit("chat:message", { user, text, timestamp: new Date().toISOString() });
+      console.log("esta llegando un mensaje", { code, user, text });
+      io.to(code).emit("chat:message", { user, text, timestamp: new Date().toISOString() });
     });
 
     socket.on("join-team", async ({ roomCode, team, userId }) => {
