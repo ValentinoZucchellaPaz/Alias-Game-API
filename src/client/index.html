@@ -8,17 +8,25 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header>Room: <span id="room-name">None</span></header>
+    <header
+      class="top-header"
+      role="banner"
+      style="display: flex; justify-content: space-between; align-items: center"
+    >
+      <div class="room-info">Room: <span id="room-name">None</span></div>
+      <div class="auth-controls">
+        <button id="login-button-1" type="button" aria-label="Log in">Log in user1</button>
+        <button id="login-button-2" type="button" aria-label="Log in">Log in user2</button>
+        <span id="user-display" style="display: none; margin-left: 8px"
+          >Signed in as <strong id="user-name"></strong
+        ></span>
+      </div>
+    </header>
 
     <div class="container">
       <div class="game-info">
         <!-- Team members info display -->
         <div id="team-status">
-          <div class="no-team-players">
-            <h4>No team</h4>
-            <div class="no-team-list"></div>
-          </div>
-
           <div class="team-members">
             <h4>Red Team</h4>
             <div id="red-team-list"></div>
@@ -47,6 +55,7 @@
       <div class="team-buttons-container">
         <button id="join-red-button">Join Red Team</button>
         <button id="join-blue-button">Join Blue Team</button>
+        <button id="create-room-btn">Create Room</button>
       </div>
 
       <!-- Form -->
@@ -70,7 +79,7 @@
       <button id="leave-room">Leave room</button>
 
       <!-- Start game button -->
-      <button id="start-game-button" style="display: none;" disabled>Start Game</button>
+      <button id="start-game-button" style="display: none" disabled>Start Game</button>
     </div>
   </body>
 </html>

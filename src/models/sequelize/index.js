@@ -1,6 +1,7 @@
 import sequelize from "../../config/db.js";
 import seedAdmin from "../../config/seedAdmin.js";
 import User from "./User.js";
+import Room from "./Room.js";
 
 export const syncDB = async () => {
   try {
@@ -16,4 +17,4 @@ export const syncDB = async () => {
   }
 };
 
-export { User };
+export { User, Room };

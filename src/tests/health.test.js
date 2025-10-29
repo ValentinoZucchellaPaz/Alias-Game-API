@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { Sequelize } from "sequelize";
-import { redisClient } from "../config/redis.js";
+import { healthTestCache } from "../config/redis.js";
 
 // Disable redis mocks for this file
 vi.unmock("../../src/config/redis.js");
@@ -31,8 +31,8 @@ describe("Correct connection to Postgres and Redis", () => {
 
     // try redis connection
     try {
-      await redisClient.connectRedis(2000);
-      await redisClient.client.ping();
+      await healthTestCache.init();
+      await healthTestCache.client.ping();
       redisConnected = true;
     } catch (err) {
       console.error("❌ Redis unavailable:", err);
@@ -48,7 +48,7 @@ describe("Correct connection to Postgres and Redis", () => {
 
   afterAll(async () => {
     if (dbConnected) await sequelize.close();
-    if (redisConnected) await redisClient.disconnect();
+    if (redisConnected && healthTestCache) await healthTestCache.client.disconnect();
   });
 
   it("PostgreSQL available and answer SELECT 1", async () => {
@@ -58,15 +58,15 @@ describe("Correct connection to Postgres and Redis", () => {
   });
 
   it("Redis available and answer get/set", async () => {
-    if (!redisConnected) return;
-    const testKey = "health:test";
+    if (!redisConnected || !healthTestCache) return;
+    const testKey = "testingRedis";
     const testValue = { ok: true };
 
-    await redisClient.set(testKey, testValue);
-    const value = await redisClient.get(testKey);
+    await healthTestCache.set(testKey, testValue);
+    const value = await healthTestCache.get(testKey);
 
     expect(value).toEqual(testValue);
 
-    await redisClient.del(testKey);
+    await healthTestCache.del(testKey);
   });
 });
