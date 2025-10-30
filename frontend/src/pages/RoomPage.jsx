@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useSocket } from "../context/SocketContext";
-import axios from "../lib/api";
 import TeamList from "../components/TeamList";
 import ChatPanel from "../components/ChatPanel";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import "./css/room-page.css";
 
 export default function RoomPage() {
   const { roomCode } = useParams();
@@ -100,20 +100,28 @@ export default function RoomPage() {
 
   if (loading) return <p>Cargando room...</p>;
   if (error) return <p>Error: {error}</p>;
-
   return (
     <div className="room-page">
-      <h1>Room: {roomCode}</h1>
+      <header className="room-header">
+        <h1>Room: {roomCode}</h1>
+        <button className="start-button" onClick={handleStartGame}>
+          Iniciar Juego
+        </button>
+      </header>
 
-      <TeamList
-        teams={teams}
-        onJoinRed={() => handleJoinTeam("red")}
-        onJoinBlue={() => handleJoinTeam("blue")}
-      />
+      <main className="room-content">
+        <aside className="room-sidebar">
+          <TeamList
+            teams={teams}
+            onJoinRed={() => handleJoinTeam("red")}
+            onJoinBlue={() => handleJoinTeam("blue")}
+          />
+        </aside>
 
-      <ChatPanel messages={messages} socket={socket} roomCode={roomCode} />
-
-      <button onClick={handleStartGame}>Iniciar Juego</button>
+        <section className="room-chat">
+          <ChatPanel messages={messages} socket={socket} roomCode={roomCode} />
+        </section>
+      </main>
     </div>
   );
 }

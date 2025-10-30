@@ -184,10 +184,10 @@ async function updateTeams(roomCode, team, userId) {
   if (!player || !player.active)
     throw new ConflictError(`User ${userId} is not in room ${roomCode}`);
 
-  if (team == "red") {
+  if (team == "red" && !room.teams.red.includes(userId)) {
     room.teams.blue = room.teams.blue.filter((id) => id != userId);
     room.teams.red.push(userId);
-  } else if (team == "blue") {
+  } else if (team == "blue" && !room.teams.blue.includes(userId)) {
     room.teams.red = room.teams.red.filter((id) => id != userId);
     room.teams.blue.push(userId);
   }

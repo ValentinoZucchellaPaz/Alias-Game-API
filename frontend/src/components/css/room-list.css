@@ -1,49 +1,79 @@
-.subheader {
-  font-size: large;
+.room-list-wrapper {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.room-list-title {
+  margin-bottom: 16px;
+  font-size: 1.4rem;
   font-weight: 600;
-  margin-bottom: 10px;
+  color: #e0e0e0;
+  text-align: center;
 }
 
 .room-list {
-  width: 401px;
-  border: 1px solid;
-  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
+
 .room-item {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid;
-  padding: 10px;
   align-items: center;
+
+  background: #2c2c2c;
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid #333;
+
+  transition: background 0.2s, transform 0.1s;
 }
 
 .room-item:hover {
-  cursor: pointer;
-  background-color: #f0f0f0;
+  background: #3a3a3a;
+  transform: scale(1.01);
+}
+
+.room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .room-name {
-  font-weight: 400;
-  font-size: 1.125rem;
-  margin-bottom: 2px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
 }
 
 .room-players {
-  font-size: 0.875rem;
-  color: #555;
-  margin-left: 1px;
+  font-size: 0.9rem;
+  color: #ccc;
+  margin: 0;
 }
 
 .room-join-button {
-  padding: 6px 12px;
-  background-color: #3b82f6;
+  background-color: #0077cc;
   color: white;
   border: none;
-  border-radius: 5px;
-  font-size: 0.875rem;
+  padding: 8px 14px;
+  border-radius: 6px;
   font-weight: 500;
-}
-.room-join-button:hover {
   cursor: pointer;
-  background-color: #2563eb;
+  transition: background-color 0.2s;
+}
+
+.room-join-button:hover {
+  background-color: #005fa3;
+}
+
+.room-list-empty {
+  text-align: center;
+  color: #999;
+  font-size: 1rem;
+  padding: 2rem 0;
 }

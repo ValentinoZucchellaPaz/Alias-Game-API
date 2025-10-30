@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSocket } from "../context/SocketContext";
 import RoomList from "../components/RoomList";
 import api from "../lib/api";
+import "./css/home.css";
 
 export default function Home() {
   const [rooms, setRooms] = useState([]);
@@ -17,7 +18,6 @@ export default function Home() {
       const res = await api.get("http://localhost:4000/api/rooms", {
         withCredentials: true,
       });
-      console.log(res);
       setRooms(res.data);
     } catch (err) {
       console.error("Error al obtener rooms:", err);
@@ -32,15 +32,11 @@ export default function Home() {
 
   const handleCreateRoom = async (e) => {
     e.preventDefault();
-    // if (!newRoom.trim()) return;
-
-    console.log("handling create room");
     try {
       const res = await api.post("http://localhost:4000/api/rooms", {
         withCredentials: true,
       });
 
-      console.log(res);
       if (res.status === 201) {
         navigate(`/room/${res.data.code}`);
       }
@@ -57,12 +53,9 @@ export default function Home() {
       const res = await api.post(
         `http://localhost:4000/api/rooms/${roomCode}/join`,
         {},
-        {
-          withCredentials: true,
-        }
+        { withCredentials: true }
       );
 
-      console.log(res);
       if (res.status === 200) {
         navigate(`/room/${roomCode}`);
       }
@@ -82,21 +75,10 @@ export default function Home() {
 
   return (
     <div className="lobby-container">
-      <h1 style={{ fontWeight: "bold", fontSize: "32px" }}>
-        🎮 Alias Game Lobby
-      </h1>
+      <h1>🎮 Alias Game Lobby</h1>
 
       {/* Crear Room */}
-      <form
-        onSubmit={handleCreateRoom}
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          width: "300px",
-          height: "35px",
-          marginBottom: "20px",
-        }}
-      >
+      <form onSubmit={handleCreateRoom} className="create-room-form">
         <input
           type="text"
           placeholder="New room name"
@@ -113,15 +95,7 @@ export default function Home() {
       <button
         onClick={fetchRooms}
         disabled={loading}
-        style={{
-          marginBottom: "10px",
-          background: "#0077cc",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          padding: "6px 10px",
-          cursor: "pointer",
-        }}
+        className="refresh-button"
       >
         {loading ? "Refreshing..." : "🔄 Refresh Rooms"}
       </button>

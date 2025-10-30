@@ -71,10 +71,10 @@ export function SocketProvider({ children }) {
 
     return () => {
       // limpio al desconectar
-      socket.off("connect", handleConnect);
-      socket.off("disconnect", handleDisconnect);
-      socket.off("connect_error", handleConnectError);
-      socket.off("room:close", handleRoomClosed);
+      newSocket.off("connect", handleConnect);
+      newSocket.off("disconnect", handleDisconnect);
+      newSocket.off("connect_error", handleConnectError);
+      newSocket.off("room:close", handleRoomClosed);
       newSocket.disconnect();
       socketRef.current = null;
       setIsConnected(false);

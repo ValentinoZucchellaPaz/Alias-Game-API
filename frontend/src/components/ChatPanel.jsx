@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import "./css/chat-panel.css";
 
 export default function ChatPanel({ messages, socket, roomCode }) {
   const [text, setText] = useState("");
@@ -12,22 +13,24 @@ export default function ChatPanel({ messages, socket, roomCode }) {
   };
 
   return (
-    <div>
-      <div
-        className="chat-messages"
-        style={{ maxHeight: 300, overflowY: "auto" }}
-      >
+    <div className="chat-panel">
+      <div className="chat-messages">
         {messages.map((m, i) => (
-          <p key={i}>{m.system ? m.text : `${m.user.name}: ${m.text}`}</p>
+          <p key={i} className={m.system ? "system-msg" : "user-msg"}>
+            {m.system ? m.text : `${m.user.name}: ${m.text}`}
+          </p>
         ))}
       </div>
-      <input
-        type="text"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Escribe un mensaje"
-      />
-      <button onClick={handleSend}>Enviar</button>
+
+      <div className="chat-input-area">
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Escribe un mensaje..."
+        />
+        <button onClick={handleSend}>Enviar</button>
+      </div>
     </div>
   );
 }

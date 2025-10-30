@@ -1,0 +1,70 @@
+.room-page {
+  display: flex;
+  flex-direction: column;
+  height: 90vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #fff;
+}
+
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border: 1px solid #333;
+  background-color: #1f1f1f;
+  border-radius: 10px;
+}
+
+.room-header h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.start-button {
+  background-color: #0077cc;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.start-button:hover {
+  background-color: #005fa3;
+}
+
+.room-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 32px;
+  padding-top: 16px;
+}
+
+.room-sidebar {
+  flex: 0 0 200px;
+  background: #242424;
+  overflow-y: auto;
+}
+
+.room-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .room-content {
+    flex-direction: column;
+  }
+
+  .room-sidebar {
+    flex: none;
+    border-bottom: 1px solid #333;
+  }
+}
