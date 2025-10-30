@@ -1,7 +1,10 @@
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./layout.css";
 
 export default function AppLayout({ children }) {
+  const location = useLocation();
+  const isRoomPage = location.pathname.startsWith("/room");
   const { user, logout } = useAuth();
 
   return (
@@ -26,7 +29,9 @@ export default function AppLayout({ children }) {
       </header>
 
       <main className="app-main">
-        <div className="app-content">{children}</div>
+        <div className={`app-content ${isRoomPage ? "room-page-content" : ""}`}>
+          {children}
+        </div>
       </main>
 
       <footer className="app-footer">

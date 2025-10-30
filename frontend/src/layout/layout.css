@@ -116,6 +116,10 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
+.room-page-content {
+  max-width: 100% !important;
+}
+
 /* Footer */
 .app-footer {
   text-align: center;

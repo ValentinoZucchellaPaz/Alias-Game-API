@@ -1,26 +1,83 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import "./css/chat-panel.css";
 
 export default function ChatPanel({ messages, socket, roomCode }) {
   const [text, setText] = useState("");
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const { user } = useAuth();
+  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
-  const handleSend = () => {
+  const handleSend = (e) => {
+    e.preventDefault();
     if (!text.trim()) return;
     socket.emit("chat:message", { code: roomCode, user, text });
     setText("");
   };
 
+  // Efecto: si hay autoScroll, baja al final cuando llegan mensajes
+  useEffect(() => {
+    if (autoScroll && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, autoScroll]);
+
+  // Detectar cuando el usuario hace scroll manual
+  const handleScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+
+    const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
+
+    if (isAtBottom) {
+      setAutoScroll(true);
+      setShowScrollButton(false);
+    } else {
+      setAutoScroll(false);
+      setShowScrollButton(true);
+    }
+  };
+
+  const handleScrollToBottom = () => {
+    if (!messagesEndRef.current) return;
+    messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    setAutoScroll(true);
+    setShowScrollButton(false);
+  };
+
   return (
-    <div className="chat-panel">
-      <div className="chat-messages">
+    <form onSubmit={handleSend} className="chat-panel">
+      <div
+        className="chat-messages"
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+      >
         {messages.map((m, i) => (
-          <p key={i} className={m.system ? "system-msg" : "user-msg"}>
-            {m.system ? m.text : `${m.user.name}: ${m.text}`}
-          </p>
+          <div
+            key={i}
+            className={`chat-message ${m.system ? "system-msg" : "user-msg"}`}
+          >
+            <p className="chat-text">
+              {m.system ? m.text : `${m.user.name}: ${m.text}`}
+            </p>
+            <span className="chat-timestamp">
+              {new Date(m.timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
+
+      {showScrollButton && (
+        <button className="scroll-to-bottom" onClick={handleScrollToBottom}>
+          ↓
+        </button>
+      )}
 
       <div className="chat-input-area">
         <input
@@ -29,8 +86,8 @@ export default function ChatPanel({ messages, socket, roomCode }) {
           onChange={(e) => setText(e.target.value)}
           placeholder="Escribe un mensaje..."
         />
-        <button onClick={handleSend}>Enviar</button>
+        <button type="submit">Enviar</button>
       </div>
-    </div>
+    </form>
   );
 }

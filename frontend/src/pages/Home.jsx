@@ -8,6 +8,7 @@ import "./css/home.css";
 export default function Home() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [newRoom, setNewRoom] = useState("");
   const navigate = useNavigate();
   const { socket, isConnected } = useSocket();
@@ -76,29 +77,35 @@ export default function Home() {
   return (
     <div className="lobby-container">
       <h1>🎮 Alias Game Lobby</h1>
+      {error && (
+        <p style={{ color: "red", textAlign: "center" }}>Error: {error}</p>
+      )}
 
       {/* Crear Room */}
-      <form onSubmit={handleCreateRoom} className="create-room-form">
-        <input
+      <div className="create-room-form">
+        {/* proximamente se ve si las room se crean con settings */}
+        {/* <input
           type="text"
           placeholder="New room name"
           value={newRoom}
           onChange={(e) => setNewRoom(e.target.value)}
           className="create-input"
-        />
-        <button type="submit" className="create-button">
+        /> */}
+        <button
+          type="submit"
+          onClick={handleCreateRoom}
+          className="create-button"
+        >
           Create Room
         </button>
-      </form>
-
-      {/* Botón Refetch */}
-      <button
-        onClick={fetchRooms}
-        disabled={loading}
-        className="refresh-button"
-      >
-        {loading ? "Refreshing..." : "🔄 Refresh Rooms"}
-      </button>
+        <button
+          onClick={fetchRooms}
+          disabled={loading}
+          className="refresh-button"
+        >
+          {loading ? "Refreshing..." : "🔄 Refresh Rooms"}
+        </button>
+      </div>
 
       {/* Lista de rooms */}
       <RoomList rooms={rooms} onJoin={handleJoin} />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSocket } from "../context/SocketContext";
 import TeamList from "../components/TeamList";
 import ChatPanel from "../components/ChatPanel";
@@ -16,6 +16,7 @@ export default function RoomPage() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   // Fetch inicial de la room
   useEffect(() => {
@@ -98,15 +99,39 @@ export default function RoomPage() {
     socket.emit("start-game", { roomCode });
   };
 
-  if (loading) return <p>Cargando room...</p>;
-  if (error) return <p>Error: {error}</p>;
+  const handleLeaveRoom = async () => {
+    try {
+      await api.delete(`/rooms/${roomCode}/leave`);
+      navigate("/");
+    } catch (error) {
+      setError(error.response.data.message);
+    }
+  };
+
+  if (loading)
+    return (
+      <p style={{ textAlign: "center", margin: "50% auto" }}>
+        Cargando room...
+      </p>
+    );
+  // if (error) return <p>Error: {error}</p>;
   return (
     <div className="room-page">
+      {error && (
+        <p style={{ color: "red", textAlign: "center", marginBottom: "10px" }}>
+          Error: {error}
+        </p>
+      )}
       <header className="room-header">
         <h1>Room: {roomCode}</h1>
-        <button className="start-button" onClick={handleStartGame}>
-          Iniciar Juego
-        </button>
+        <div>
+          <button className="start-button" onClick={handleStartGame}>
+            Iniciar Juego
+          </button>
+          <button className="leave-button" onClick={handleLeaveRoom}>
+            Salir
+          </button>
+        </div>
       </header>
 
       <main className="room-content">
