@@ -2,6 +2,7 @@ import { socketCache } from "../config/redis.js";
 import roomService from "../services/room.service.js";
 import { AppError } from "../utils/errors.js";
 import jwt from "../utils/jwt.js";
+import { SocketEventEmitter } from "./SocketEventEmmiter.js";
 
 // src/sockets/registerRoomSocket.js
 /**
@@ -46,6 +47,8 @@ export default function registerRoomSocket(io) {
         console.log("error cambiando de equipo", err);
       }
     });
+
+    // eventos de juego
 
     socket.on("disconnect", async (reason) => {
       try {

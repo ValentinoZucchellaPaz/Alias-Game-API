@@ -17,7 +17,7 @@ async function createRoom({ hostId, hostName }) {
     code: roomCode,
     hostId,
     players: [{ id: hostId, active: true }], // TODO: do i save userName too?
-    teams: { red: [hostName], blue: [] },
+    teams: { red: [hostId], blue: [] }, // guardo por nombre o por id?
     globalScore: { red: 0, blue: 0 },
     games: [],
     status: "waiting",

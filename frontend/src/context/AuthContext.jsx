@@ -10,6 +10,16 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
+  const register = async (email, name, password) => {
+    try {
+      await api.post("/auth/register", { email, name, password });
+      navigate("/login");
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
+  };
+
   const login = async (email, password) => {
     try {
       const res = await api.post("/auth/login", { email, password });
@@ -20,7 +30,7 @@ export const AuthProvider = ({ children }) => {
       navigate("/");
     } catch (err) {
       console.error(err);
-      alert("Error al iniciar sesión");
+      throw err;
     }
   };
 
@@ -42,7 +52,6 @@ export const AuthProvider = ({ children }) => {
       setUser(decoded);
       return accessToken;
     } catch (err) {
-      console.error("No se pudo refrescar el token", err);
       setToken(null);
       setUser(null);
       navigate("/login");
@@ -57,6 +66,7 @@ export const AuthProvider = ({ children }) => {
         user,
         setToken,
         setUser,
+        register,
         login,
         logout,
         refreshAccessToken,

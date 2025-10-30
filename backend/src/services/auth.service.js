@@ -53,10 +53,10 @@ async function logout(userId) {
 
 async function validateAndRotateToken(token) {
   const payload = jwt.verifyRefreshToken({ token });
-  if (!payload) throw new Error("Invalid or expired refresh token");
+  if (!payload) throw new AuthError("Invalid or expired refresh token");
 
   const exists = await refreshRepository.exists(payload.id, token);
-  if (!exists) throw new Error("Invalid refresh token");
+  if (!exists) throw new AuthError("Invalid refresh token");
 
   const accessToken = jwt.generateAccessToken(payload.id, payload.name, payload.role);
   const refreshToken = jwt.generateRefreshToken(payload.id, payload.name, payload.role);

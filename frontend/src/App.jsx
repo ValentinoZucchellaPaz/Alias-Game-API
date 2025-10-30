@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import useAxiosAuth from "./hooks/useAxiosAuth";
 import RoomPage from "./pages/RoomPage";
 import AppLayout from "./layout/AppLayout.jsx";
+import Register from "./pages/Register.jsx";
 
 function App() {
   useAxiosAuth(); // activar interceptores de axios (agregan token a todas las req)
@@ -25,6 +26,10 @@ function App() {
         <Route
           path="/login"
           element={!token ? <Login /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/register"
+          element={!token ? <Register /> : <Navigate to="/" replace />}
         />
         <Route
           path="/room/:roomCode"

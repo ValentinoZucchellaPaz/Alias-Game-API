@@ -7,7 +7,6 @@ export default function useAxiosAuth() {
 
   useEffect(() => {
     // ✅ Interceptor de request: agrega el token a todas las request
-    console.log("en el middleware de auth");
     const requestInterceptor = api.interceptors.request.use(
       (config) => {
         if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -21,8 +20,14 @@ export default function useAxiosAuth() {
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
+        const isRefreshEndpoint =
+          originalRequest?.url?.includes("auth/refresh-token");
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !isRefreshEndpoint
+        ) {
           originalRequest._retry = true;
           try {
             const newAccessToken = await refreshAccessToken();
