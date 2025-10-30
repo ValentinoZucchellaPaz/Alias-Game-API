@@ -21,7 +21,7 @@ export default function Home() {
       });
       setRooms(res.data);
     } catch (err) {
-      console.error("Error al obtener rooms:", err);
+      setError(err.response.data.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -42,8 +42,7 @@ export default function Home() {
         navigate(`/room/${res.data.code}`);
       }
     } catch (err) {
-      console.error("Error al crear room:", err);
-      alert("Error al crear sala. Ver consola para más detalles.");
+      setError(err.response.data.message || err.message);
     } finally {
       setNewRoom("");
     }
@@ -61,8 +60,7 @@ export default function Home() {
         navigate(`/room/${roomCode}`);
       }
     } catch (err) {
-      console.error("Error al unirse a la room:", err);
-      alert("No se pudo unir a la sala. Ver consola.");
+      setError(err.response.data.message || err.message);
     }
   };
 

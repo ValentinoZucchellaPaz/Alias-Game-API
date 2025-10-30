@@ -5,6 +5,7 @@
   position: relative;
 }
 
+/* === LISTA DE MENSAJES === */
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -12,43 +13,61 @@
   padding: 12px;
   border-radius: 8px;
   border: 1px solid #333;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   scroll-behavior: smooth;
 }
 
-/* Cada mensaje tiene un sutil borde inferior y padding vertical */
-.chat-messages p {
-  margin: 0;
-  padding: 6px 4px;
+/* === CADA MENSAJE === */
+.chat-message {
+  position: relative;
+  margin-bottom: 5px;
+  padding: 6px 8px;
   border-bottom: 1px solid #2a2a2a;
   transition: background-color 0.2s ease;
-}
-
-/* Último mensaje sin borde */
-.chat-messages p:last-child {
-  border-bottom: none;
-}
-
-.chat-messages p:hover {
-  background-color: rgba(255, 255, 255, 0.04);
-}
-
-.user-msg {
-  color: #ddd;
-}
-
-/* Mensajes del sistema: sutil color ámbar + línea superior */
-.system-msg {
-  color: #c8a96f;
-  font-style: italic;
-  border-top: 1px solid #3a3a3a;
-  border-bottom: 1px solid #3a3a3a;
-  padding: 8px 4px;
-  margin: 6px 0;
-  background: rgba(255, 215, 128, 0.04);
   border-radius: 4px;
 }
 
+.chat-message:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Texto principal */
+.chat-text {
+  margin: 0;
+  color: #ddd;
+  word-wrap: break-word;
+}
+
+/* Timestamp (hora) */
+.chat-timestamp {
+  display: block;
+  text-align: right;
+  font-size: 0.75rem;
+  color: #777;
+}
+
+/* === MENSAJES DE USUARIO === */
+.user-msg .chat-text {
+  color: #ddd;
+}
+
+/* === MENSAJES DEL SISTEMA === */
+.system-msg {
+  color: #c8a96f;
+  font-style: italic;
+  border: 1px solid #3a3a3a;
+  border: 1px solid #3a3a3a;
+  background: rgba(255, 215, 128, 0.04);
+  border-radius: 4px;
+  margin-bottom: 5px;
+  padding: 6px 8px;
+}
+
+.system-msg .chat-timestamp {
+  color: #9b8759;
+}
+
+/* === ÁREA DE INPUT === */
 .chat-input-area {
   display: flex;
   gap: 8px;
@@ -82,6 +101,7 @@
   background-color: #005fa3;
 }
 
+/* === BOTÓN DE SCROLL ABAJO === */
 .scroll-to-bottom {
   position: absolute;
   bottom: 60px;
@@ -94,10 +114,24 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   font-size: 0.85rem;
   padding: 6px 10px;
-  transition: background 0.2s ease, transform 0.15s ease;
+  transition: background 0.2s ease, transform 0.1s ease;
 }
 
 .scroll-to-bottom:hover {
   background: #1e4ed8;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+}
+
+/* === SCROLLBAR PERSONALIZADO (solo WebKit) === */
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }

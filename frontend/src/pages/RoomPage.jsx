@@ -11,7 +11,7 @@ export default function RoomPage() {
   const { roomCode } = useParams();
   const { socket, isConnected } = useSocket();
   const { user } = useAuth();
-  const [roomData, setRoomData] = useState(null);
+  const [roomData, setRoomData] = useState(null); // <- proximamente aca se guarda data de juego
   const [teams, setTeams] = useState({ red: [], blue: [] });
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,15 +52,22 @@ export default function RoomPage() {
       if (code !== roomCode) return;
       setMessages((prev) => [
         ...prev,
-        { system: true, text: `${userName} se unió a la room ${code}` },
+        {
+          system: true,
+          text: `${userName} se unió`,
+          timestamp: new Date().toISOString(),
+        },
       ]);
     };
 
     const handlePlayerLeft = ({ userId, userName }) => {
-      console.log("a player has left");
       setMessages((prev) => [
         ...prev,
-        { system: true, text: `${userName} salió` },
+        {
+          system: true,
+          text: `${userName} salió`,
+          timestamp: new Date().toISOString(),
+        },
       ]);
     };
 
