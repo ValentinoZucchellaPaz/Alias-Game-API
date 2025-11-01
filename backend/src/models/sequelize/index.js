@@ -2,6 +2,7 @@ import sequelize from "../../config/db.js";
 import seedAdmin from "../../config/seedAdmin.js";
 import User from "./User.js";
 import Room from "./Room.js";
+import seedWords from "../../config/seedWords.js";
 
 export const syncDB = async () => {
   try {
@@ -10,6 +11,7 @@ export const syncDB = async () => {
     // console.log("All tables synced");
 
     await seedAdmin(); // Inserta usuario semilla si no existe
+    await seedWords();
 
     console.log("✅ DB ready");
   } catch (err) {
