@@ -2,18 +2,22 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import "./css/chat-panel.css";
 
-export default function ChatPanel({ messages, socket, roomCode }) {
+export default function ChatPanel({ messages, socket, roomCode, inGame }) {
   const [text, setText] = useState("");
   const [autoScroll, setAutoScroll] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  console.log("User in ChatPanel:", user);
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!text.trim()) return;
-    socket.emit("chat:message", { code: roomCode, user, text });
+    const event = inGame ? "game:message" : "chat:message";
+    console.log("event to emit:", event);
+    console.log("In game status:", inGame);
+    socket.emit(event, { code: roomCode, user, text });
     setText("");
   };
 
@@ -57,7 +61,9 @@ export default function ChatPanel({ messages, socket, roomCode }) {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`chat-message ${m.system ? "system-msg" : "user-msg"}`}
+            className={`chat-message ${
+              m.system ? "system-msg" : m.success ? "success-msg" : "user-msg"
+            }`}
           >
             <p className="chat-text">
               {m.system ? m.text : `${m.user.name}: ${m.text}`}

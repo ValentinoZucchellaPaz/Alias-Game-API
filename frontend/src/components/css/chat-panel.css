@@ -63,6 +63,16 @@
   padding: 6px 8px;
 }
 
+.success-msg {
+  color: #7ed957;
+  font-style: italic;
+  border: 1px solid #3a3a3a;
+  background: rgba(126, 217, 87, 0.04);
+  border-radius: 4px;
+  margin-bottom: 5px;
+  padding: 6px 8px;
+}
+
 .system-msg .chat-timestamp {
   color: #9b8759;
 }

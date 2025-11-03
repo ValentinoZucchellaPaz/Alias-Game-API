@@ -12,6 +12,7 @@ export default function RoomPage() {
   const { socket, isConnected } = useSocket();
   const { user } = useAuth();
   const [roomData, setRoomData] = useState(null); // <- proximamente aca se guarda data de juego
+  const [roomState, setRoomState] = useState("lobby");
   const [teams, setTeams] = useState({ red: [], blue: [] });
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,14 +76,36 @@ export default function RoomPage() {
       setMessages((prev) => [...prev, { user, text, timestamp }]);
     };
 
+    const handleCorrectAnswer = ({ user, text }) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          user,
+          text: `¡Respuesta correcta! ${user.name} adivinó la palabra: ${text}`,
+          timestamp: new Date().toISOString(),
+          success: true,
+        },
+      ]);
+    };
+
     const handleTeamState = ({ red, blue }) => {
       setTeams({ red, blue });
+    };
+
+    const startGame = () => {
+      setRoomState("in-game");
     };
 
     socket.on("player:joined", handlePlayerJoined);
     socket.on("player:left", handlePlayerLeft);
     socket.on("chat:message", handleChatMessage);
     socket.on("team-state", handleTeamState);
+    socket.on("game:started", startGame);
+    socket.on("game:correct-answer", handleCorrectAnswer);
+    socket.on("game:turn-updated", (gameData) => {
+      // proximamente manejar actualizacion de turno
+      alert("Turno actualizado");
+    });
 
     return () => {
       socket.off("player:joined", handlePlayerJoined);
@@ -101,9 +124,16 @@ export default function RoomPage() {
     });
   };
 
-  const handleStartGame = () => {
-    if (!socket) return;
-    socket.emit("start-game", { roomCode });
+  const handleStartGame = async () => {
+    console.log("Starting game for room:", roomCode);
+    const res = await api.post(`/rooms/${roomCode}/start`, {
+      withCredentials: true,
+    });
+    console.log("start game response:", res);
+    if (res.status === 200) {
+      setRoomState("in-game");
+      alert("Juego iniciado");
+    }
   };
 
   const handleLeaveRoom = async () => {
@@ -151,7 +181,12 @@ export default function RoomPage() {
         </aside>
 
         <section className="room-chat">
-          <ChatPanel messages={messages} socket={socket} roomCode={roomCode} />
+          <ChatPanel
+            messages={messages}
+            socket={socket}
+            roomCode={roomCode}
+            inGame={roomState === "in-game"}
+          />
         </section>
       </main>
     </div>
