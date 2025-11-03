@@ -1,7 +1,12 @@
+import gameService from "../services/game.service.js";
 import roomService from "../services/room.service.js";
+import { SocketEventEmitter } from "../sockets/SocketEventEmmiter.js";
 
 export const createRoom = async (req, res) => {
-  const room = await roomService.createRoom({ hostId: req.user.id, hostName: req.user.name });
+  const room = await roomService.createRoom({
+    hostId: req.user.id,
+    hostName: req.user.name,
+  });
   res.status(201).json(room);
 };
 
@@ -41,4 +46,12 @@ export const getRoomByCode = async (req, res) => {
 export const getRooms = async (req, res) => {
   const rooms = await roomService.getRooms();
   res.json(rooms);
+};
+
+export const startGame = async (req, res) => {
+  const { code } = req.params;
+  const { words } = req.body;
+  const game = await gameService.createGame(code, words);
+  SocketEventEmitter.gameStarted(code, game);
+  res.json(game);
 };
