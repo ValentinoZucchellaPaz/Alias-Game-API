@@ -1,0 +1,141 @@
+// {
+//   word: string;
+//   similarity: [],
+//   prohibited: []
+
+import { deserialize, serialize } from "../utils/objects.js";
+
+// }
+export class Game {
+  constructor(roomCode, teams, words, turns = 6) {
+    this.roomCode = roomCode;
+    this.teams = {
+      red: { players: teams.red || [], describer: 0 },
+      blue: { players: teams.blue || [], describer: 0 },
+    };
+    this.currentTeam = null;
+    this.currentDescriber = null;
+    this.wordToGuess = null;
+    this.words = {
+      used: [],
+      unused: words,
+    };
+    this.maxTurns = turns;
+    this.turnsPlayed = 0;
+    this.state = "waiting"; // playing || waiting || finished
+
+    console.log("Initialized new Game:", this.gameState());
+  }
+
+  static from(roomCode, data) {
+    const deserializedData = deserialize(data);
+
+    if (!deserializedData || Object.keys(deserializedData).length === 0) {
+      console.log("No data found to reconstruct game for room:", roomCode);
+      return null;
+    }
+
+    const teams = {
+      red: deserializedData.teams.red.players,
+      blue: deserializedData.teams.blue.players,
+    };
+    const game = new Game(roomCode, teams, []);
+    game.currentTeam = deserializedData.currentTeam;
+    game.currentDescriber = deserializedData.currentDescriber;
+    game.wordToGuess = deserializedData.wordToGuess;
+    game.words = deserializedData.words;
+    game.maxTurns = deserializedData.maxTurns;
+    game.turnsPlayed = deserializedData.turnsPlayed;
+    game.state = deserializedData.state;
+    console.log("Reconstructed game from data:", game.gameState());
+    return game;
+  }
+
+  async startGame() {
+    // initialize game state
+    this.currentTeam = "red";
+    this.currentDescriber = this.getCurrentDescriber();
+
+    this.pickWord();
+    this.state = "playing";
+
+    console.log("Game started:", this.gameState());
+  }
+
+  chooseNextDescriber() {
+    // rotate describer index for the current team
+    const currTeam = this.teams[this.currentTeam];
+    currTeam.describer = (currTeam.describer + 1) % currTeam.players.length;
+    this.currentDescriber = currTeam.players[currTeam.describer];
+  }
+
+  getCurrentDescriber() {
+    // return the current player describing the word
+    // e.g., the first player in the team
+    const currTeam = this.teams[this.currentTeam];
+    const currentDescriberIndex = currTeam.describer;
+    return currTeam.players[currentDescriberIndex];
+  }
+
+  pickWord() {
+    // return a random word from the words array
+    // e.g., a random element from this.words
+    this.wordToGuess = this.words.unused[Math.floor(Math.random() * this.words.unused.length)];
+  }
+
+  checkAnswer(text) {
+    if (!text || !this.wordToGuess) return false;
+
+    if (text.toLowerCase() === this.wordToGuess.toLowerCase()) {
+      this.words.used.push(this.wordToGuess);
+      this.words.unused = this.words.unused.filter((word) => word !== this.wordToGuess);
+      return true;
+    }
+    return false;
+  }
+
+  isPlayerTurn(userId) {
+    return this.currentDescriber === userId;
+  }
+
+  isGuesser(userId) {
+    const currentTeam = this.currentTeam;
+    return this.teams[currentTeam].players.includes(userId) && userId !== this.currentDescriber;
+  }
+
+  nextTurn() {
+    this.turnsPlayed += 1;
+
+    // check if max turns reached
+    if (this.turnsPlayed >= this.maxTurns) {
+      this.state = "finished";
+      return;
+    }
+
+    // switch to the next team and player
+    if (this.currentTeam === "red") {
+      this.currentTeam = "blue";
+    } else {
+      this.currentTeam = "red";
+    }
+    this.chooseNextDescriber();
+    this.pickWord();
+    console.log("New word to guess:", this.wordToGuess);
+  }
+
+  gameFinish() {}
+
+  gameState() {
+    // save game state to Redis
+    return serialize({
+      teams: this.teams,
+      currentTeam: this.currentTeam,
+      currentDescriber: this.currentDescriber,
+      words: this.words,
+      maxTurns: this.maxTurns,
+      turnsPlayed: this.turnsPlayed,
+      state: this.state,
+      wordToGuess: this.wordToGuess,
+    });
+  }
+}
