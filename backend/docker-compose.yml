@@ -69,6 +69,6 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "4000:4000"
 volumes:
   redis_data:
