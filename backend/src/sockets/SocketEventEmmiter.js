@@ -149,4 +149,22 @@ export class SocketEventEmitter {
 
     return socket;
   }
+
+  static async gameStarted(roomCode, game) {
+    const io = SocketEventEmitter.getIO();
+    io.to(roomCode).emit("game:started", { game });
+    console.log(`📢 Emitted game:started for room=${roomCode}`);
+  }
+
+  static async gameCorrectAnswer(roomCode, user, text) {
+    const io = SocketEventEmitter.getIO();
+    io.to(roomCode).emit("game:correct-answer", { user, text });
+    console.log(`📢 Emitted game:correct-answer for room=${roomCode}, user=${user.id}`);
+  }
+
+  static async gameTurnUpdated(roomCode, game) {
+    const io = SocketEventEmitter.getIO();
+    io.to(roomCode).emit("game:turn-updated", { game });
+    console.log(`📢 Emitted game:turn-updated for room=${roomCode}`);
+  }
 }

@@ -1,4 +1,5 @@
 import { socketCache } from "../config/redis.js";
+import gameService from "../services/game.service.js";
 import roomService from "../services/room.service.js";
 import { AppError } from "../utils/errors.js";
 import jwt from "../utils/jwt.js";
@@ -37,18 +38,37 @@ export default function registerRoomSocket(io) {
 
     socket.on("chat:message", ({ code, user, text }) => {
       console.log("esta llegando un mensaje", { code, user, text });
-      io.to(code).emit("chat:message", { user, text, timestamp: new Date().toISOString() });
+      io.to(code).emit("chat:message", {
+        user,
+        text,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    socket.on("game:message", async ({ code, user, text }) => {
+      if (!text) return;
+      const attempt = await gameService.checkForAnswer(user, text, code);
+
+      if (attempt) {
+        console.log("el intento es correcto");
+        await SocketEventEmitter.gameCorrectAnswer(code, user, text);
+      } else {
+        console.log("el intento es incorrecto");
+        io.to(code).emit("chat:message", {
+          user,
+          text,
+          timestamp: new Date().toISOString(),
+        });
+      }
     });
 
     socket.on("join-team", async ({ roomCode, team, userId }) => {
       try {
         await roomService.updateTeams(roomCode, team, userId);
       } catch (error) {
-        console.log("error cambiando de equipo", err);
+        console.log("error cambiando de equipo", error);
       }
     });
-
-    // eventos de juego
 
     socket.on("disconnect", async (reason) => {
       try {
