@@ -11,9 +11,9 @@ import { SocketEventEmitter } from "./sockets/SocketEventEmmiter.js";
 
 // servir client
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use(express.static(path.join(__dirname, "client"))); //Serve static files from /client
+app.use(express.static(path.join(__dirname, "client")));
 
-const PORT = 4000; // problemas con docker en el mismo puerto
+const PORT = 4000;
 
 const server = createServer(app);
 const io = new Server(server, {
