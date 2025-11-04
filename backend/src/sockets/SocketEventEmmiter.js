@@ -165,11 +165,12 @@ export class SocketEventEmitter {
     console.log(`📢 Emitted game:started for room=${roomCode}`);
   }
 
-  static gameCorrectAnswer(roomCode, user, text) {
+  static gameCorrectAnswer(roomCode, user, text, game) {
     const io = SocketEventEmitter.getIO();
     io.to(roomCode).emit("game:correct-answer", {
       user,
       text,
+      game,
       timestamp: new Date().toISOString(),
     });
     console.log(`📢 Emitted game:correct-answer for room=${roomCode}, user=${user.id}`);

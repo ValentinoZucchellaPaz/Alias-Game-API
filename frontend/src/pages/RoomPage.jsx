@@ -12,7 +12,7 @@ export default function RoomPage() {
   const { roomCode } = useParams();
   const { socket, isConnected } = useSocket();
   const { user } = useAuth();
-  const [gameData, setGameData] = useState(null); // <- proximamente aca se guarda data de juego
+  const [gameData, setGameData] = useState(null);
   const [roomState, setRoomState] = useState("lobby");
   const [teams, setTeams] = useState({ red: [], blue: [] });
   const [messages, setMessages] = useState([]);
@@ -20,7 +20,7 @@ export default function RoomPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // Fetch inicial de la room
+  // Initial fetch
   useEffect(() => {
     const fetchRoom = async () => {
       try {
@@ -28,16 +28,19 @@ export default function RoomPage() {
         const res = await api.get(`/rooms/${roomCode}`);
         const data = res.data;
 
-        // Validaciones
-        if (data.status == "finished") throw new Error("Room no activa");
+        if (data.status === "finished") throw new Error("Inactive room");
         if (!data.players.some((p) => p.id === user.id && p.active))
-          throw new Error("No perteneces a esta room");
-        // setRoomData(data);
+          throw new Error("You are not part of this room");
+
         setTeams(data.teams);
         setMessages(data.chat || []);
+        if (data.game) {
+          setGameData(data.game);
+          setRoomState("in-game");
+        }
       } catch (err) {
         console.error(err);
-        setError(err.message || "Error al cargar la room");
+        setError(err.message || "Error loading room");
       } finally {
         setLoading(false);
       }
@@ -46,31 +49,29 @@ export default function RoomPage() {
     fetchRoom();
   }, [roomCode, user]);
 
-  // Eventos de socket dentro de la room
+  // Socket events
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    const handlePlayerJoined = ({ userId, userName, roomCode: code }) => {
+    const handlePlayerJoined = ({ userName, roomCode: code }) => {
       if (code !== roomCode) return;
-      console.log("username se ha unido ", userName);
       setMessages((prev) => [
         ...prev,
         {
           system: true,
-          text: `${userName} se unió`,
+          text: `${userName} joined`,
           timestamp: new Date().toISOString(),
         },
       ]);
     };
 
-    const handlePlayerLeft = ({ userId, userName, roomCode: code }) => {
+    const handlePlayerLeft = ({ userName, roomCode: code }) => {
       if (code !== roomCode) return;
-      console.log("username se ha ido ", userName);
       setMessages((prev) => [
         ...prev,
         {
           system: true,
-          text: `${userName} salió`,
+          text: `${userName} left`,
           timestamp: new Date().toISOString(),
         },
       ]);
@@ -80,12 +81,13 @@ export default function RoomPage() {
       setMessages((prev) => [...prev, { user, text, timestamp }]);
     };
 
-    const handleCorrectAnswer = ({ user, text, timestamp }) => {
+    const handleCorrectAnswer = ({ user, text, timestamp, game }) => {
+      setGameData(game);
       setMessages((prev) => [
         ...prev,
         {
           user,
-          text: `¡Respuesta correcta! ${user.name} adivinó la palabra: ${text}`,
+          text: `✅ Correct answer! ${user.name} guessed: ${text}`,
           timestamp,
           success: true,
         },
@@ -102,11 +104,39 @@ export default function RoomPage() {
     const handleGameStarted = ({ game }) => {
       setGameData(game);
       setRoomState("in-game");
+      setMessages((prev) => [
+        ...prev,
+        {
+          system: true,
+          text: "🎮 Game started!",
+          timestamp: new Date().toISOString(),
+        },
+      ]);
     };
 
     const handleTurnUpdated = ({ game }) => {
       setGameData(game);
-      console.log("🔁 Turno actualizado:", game);
+      setMessages((prev) => [
+        ...prev,
+        {
+          system: true,
+          text: `🔁 New turn: ${game.currentTeam} - describer: ${game.currentDescriber}`,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    };
+
+    const handleGameFinished = (results) => {
+      setGameData((prev) => ({ ...prev, results }));
+      setRoomState("finished");
+      setMessages((prev) => [
+        ...prev,
+        {
+          system: true,
+          text: "🏁 Game over!",
+          timestamp: new Date().toISOString(),
+        },
+      ]);
     };
 
     socket.on("player:joined", handlePlayerJoined);
@@ -116,9 +146,8 @@ export default function RoomPage() {
     socket.on("game:started", handleGameStarted);
     socket.on("game:correct-answer", handleCorrectAnswer);
     socket.on("game:turn-updated", handleTurnUpdated);
-    socket.on("game:finished", (results) =>
-      console.log("se ha terminado jodeh ", results)
-    );
+    socket.on("game:finished", handleGameFinished);
+
     return () => {
       socket.off("player:joined", handlePlayerJoined);
       socket.off("player:left", handlePlayerLeft);
@@ -127,12 +156,11 @@ export default function RoomPage() {
       socket.off("game:started", handleGameStarted);
       socket.off("game:correct-answer", handleCorrectAnswer);
       socket.off("game:turn-updated", handleTurnUpdated);
-      socket.off("game:finished", (results) =>
-        console.log("se ha terminado jodeh ", results)
-      );
+      socket.off("game:finished", handleGameFinished);
     };
   }, [socket, isConnected, roomCode]);
 
+  // Actions
   const handleJoinTeam = (teamName) => {
     if (!socket) return;
     socket.emit("join-team", {
@@ -143,15 +171,17 @@ export default function RoomPage() {
   };
 
   const handleStartGame = async () => {
-    console.log("Starting game for room:", roomCode);
-    const res = await api.post(`/rooms/${roomCode}/start`, {
-      withCredentials: true,
-    });
-    console.log("start game response:", res);
-    if (res.status === 200) {
-      setRoomState("in-game");
-      setGameData(res.data);
-      alert("Juego iniciado");
+    try {
+      const res = await api.post(`/rooms/${roomCode}/start`, {
+        withCredentials: true,
+      });
+      if (res.status === 200) {
+        setRoomState("in-game");
+        setGameData(res.data);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error starting the game");
     }
   };
 
@@ -160,17 +190,15 @@ export default function RoomPage() {
       await api.delete(`/rooms/${roomCode}/leave`);
       navigate("/");
     } catch (error) {
-      setError(error.response.data.message);
+      setError(error.response?.data?.message || "Error leaving the room");
     }
   };
 
   if (loading)
     return (
-      <p style={{ textAlign: "center", margin: "50% auto" }}>
-        Cargando room...
-      </p>
+      <p style={{ textAlign: "center", margin: "50% auto" }}>Loading room...</p>
     );
-  // if (error) return <p>Error: {error}</p>;
+
   return (
     <div className="room-page">
       {error && (
@@ -178,21 +206,30 @@ export default function RoomPage() {
           Error: {error}
         </p>
       )}
+
       <header className="room-header">
         <h1>Room: {roomCode}</h1>
-        <div>
-          {gameData && (
-            <>
-              {gameData.currentDescriber == user.id &&
-                gameData?.wordToGuess.word}
-              <Timer seconds={60} onComplete={() => console.log("terminado")} />
-            </>
+
+        <div className="header-controls">
+          {roomState === "in-game" && gameData && (
+            <div className="game-status-wrapper">
+              <GameStatusPanel gameData={gameData} user={user} />
+              <Timer
+                key={gameData?.currentTeam}
+                seconds={60}
+                resetKey={gameData?.currentTeam}
+                onComplete={() => console.log("⏰ end of your turn")}
+              />
+            </div>
           )}
-          <button className="start-button" onClick={handleStartGame}>
-            Iniciar Juego
-          </button>
+
+          {roomState === "lobby" && (
+            <button className="start-button" onClick={handleStartGame}>
+              Start Game
+            </button>
+          )}
           <button className="leave-button" onClick={handleLeaveRoom}>
-            Salir
+            Leave
           </button>
         </div>
       </header>
@@ -215,6 +252,38 @@ export default function RoomPage() {
           />
         </section>
       </main>
+
+      {roomState === "finished" && gameData && (
+        <div className="results-panel">
+          <h2>🏁 Final Results</h2>
+          <p>Red Team: {gameData.results?.red ?? 0} pts</p>
+          <p>Blue Team: {gameData.results?.blue ?? 0} pts</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// -----------------------------
+// 📊 Live Game Status Component
+// -----------------------------
+function GameStatusPanel({ gameData, user }) {
+  const isDescriber = gameData.currentDescriber === user.id;
+  const currentWord = gameData?.wordToGuess?.word || "—";
+  const redScore = gameData?.teams?.red?.score ?? 0;
+  const blueScore = gameData?.teams?.blue?.score ?? 0;
+
+  return (
+    <div className="game-status-panel">
+      <div className="scores">
+        <span className="score red">🔴 {redScore}</span>
+        <span className="score blue">🔵 {blueScore}</span>
+      </div>
+      {isDescriber && (
+        <p className="current-word">
+          Word: <strong>{currentWord}</strong>
+        </p>
+      )}
     </div>
   );
 }

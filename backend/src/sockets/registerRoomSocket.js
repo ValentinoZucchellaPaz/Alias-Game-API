@@ -42,11 +42,11 @@ export default function registerRoomSocket(io) {
 
     socket.on("game:message", async ({ code, user, text }) => {
       if (!text) return;
-      const attempt = await gameService.checkForAnswer(user, text, code);
+      const { correct, game } = await gameService.checkForAnswer(user, text, code);
 
-      if (attempt) {
+      if (correct) {
         console.log("el intento es correcto");
-        SocketEventEmitter.gameCorrectAnswer(code, user, text);
+        SocketEventEmitter.gameCorrectAnswer(code, user, text, game);
       } else {
         console.log("el intento es incorrecto");
         SocketEventEmitter.sendMessage({ code, user, text });

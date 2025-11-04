@@ -58,15 +58,16 @@ async function handleGameTurnNext(roomCode) {
 
   setTimerForGame(roomCode, game);
 
-  await saveGame(roomCode, game);
-
   console.log("Emitting game turn update for room:", roomCode);
-  SocketEventEmitter.gameTurnUpdated(roomCode, game);
+  SocketEventEmitter.gameTurnUpdated(roomCode, game); // feedback optimista
+
+  await saveGame(roomCode, game);
 }
 
 async function checkForAnswer(user, text, roomCode) {
   const game = await getGame(roomCode);
 
+  // si game.status!=playing salir
   // aca estaria bueno validar si el jugador es del equipo que adivina
 
   // const isValidAttempt = game.isGuesser(user.id);
@@ -94,7 +95,7 @@ async function checkForAnswer(user, text, roomCode) {
   }
 
   console.log("Answer correct:", correct);
-  return correct;
+  return { correct, game };
 }
 
 function setTimerForGame(roomCode, game) {
