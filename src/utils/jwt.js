@@ -15,7 +15,7 @@ const generateRefreshToken = (id, name, role) => {
 const verifyAccessToken = ({ token }) => {
   try {
     return jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 };
@@ -23,7 +23,7 @@ const verifyAccessToken = ({ token }) => {
 const verifyRefreshToken = ({ token }) => {
   try {
     return jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 };

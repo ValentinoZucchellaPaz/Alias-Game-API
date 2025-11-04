@@ -1,0 +1,76 @@
+name: CI - Run Tests
+
+on:
+  push:
+    branches: [main, dev, vzp/tests-CI]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dbuser
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        # Espera a que Postgres esté listo antes de correr los tests
+        options: >-
+          --health-cmd="pg_isready -U dbuser -d testdb"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      NODE_ENV: test
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      DB_HOST: localhost
+      DB_USER: dbuser
+      DB_PASSWORD: password
+      DB_NAME: testdb
+      DB_PORT: 5432
+      ACCESS_TOKEN_SECRET: una_clave_larga_y_secreta
+      REFRESH_TOKEN_SECRET: otra_clave_tambien_secreta
+      ACCESS_TOKEN_EXP: 15m
+      REFRESH_TOKEN_EXP: 7d
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "⏳ Waiting for Postgres and Redis..."
+          for i in {1..10}; do
+            nc -z localhost 5432 && nc -z localhost 6379 && echo "✅ Services ready" && break
+            echo "⏱️ Waiting ($i/10)..."
+            sleep 3
+          done
+
+      - name: Run tests
+        run: npm test

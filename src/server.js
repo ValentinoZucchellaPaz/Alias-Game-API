@@ -1,12 +1,30 @@
+import express from "express";
 import app from "./app.js";
 import { syncDB } from "./models/sequelize/index.js";
-import { redisClient } from "./config/redis.js";
+import { Server } from "socket.io";
+import { RedisClientSingleton } from "./config/redis.js";
+import { createServer } from "http";
+import path from "path";
+import { fileURLToPath } from "url";
+import registerRoomSocket from "./sockets/registerRoomSocket.js";
+import { SocketEventEmitter } from "./sockets/SocketEventEmmiter.js";
 
-const PORT = process.env.PORT || 3000;
+// servir client
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use(express.static(path.join(__dirname, "client"))); //Serve static files from /client
 
-(async () => {
+const PORT = 4000; // problemas con docker en el mismo puerto
+
+const server = createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" },
+});
+
+registerRoomSocket(io);
+SocketEventEmitter.init(io);
+
+server.listen(PORT, async () => {
   await syncDB();
-  await redisClient.connectRedis();
-
-  app.listen(PORT, () => console.log(`Server running on port http://localhost:${PORT}`));
-})();
+  await RedisClientSingleton.getInstance(); // inicializa singleton
+  console.log(`Server running on port http://localhost:${PORT}`);
+});
