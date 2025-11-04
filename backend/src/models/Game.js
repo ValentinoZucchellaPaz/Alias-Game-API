@@ -58,8 +58,6 @@ export class Game {
 
     await this.pickWord();
     this.state = "playing";
-
-    console.log("Game started:", this.gameState());
   }
 
   chooseNextDescriber() {
@@ -78,21 +76,16 @@ export class Game {
   }
 
   async pickWord() {
-    // return a random word from the words array
+    // return a random word from the words array, if there's not any call db for more
     // e.g., a random element from this.words
     if (!this.words.unused.length) {
       this.words.unused = await gameRepository.getWords(this.words.used.map((w) => w.word));
     }
     this.wordToGuess = this.words.unused[Math.floor(Math.random() * this.words.unused.length)];
-
-    // si se usaron todas las palabras se debe llamar por mas a la db
   }
 
   checkAnswer(text) {
     if (!text || !this.wordToGuess) return false;
-
-    // filtrado inteligente: sacar puntos en el medio de la palabra, trim, sanitizar
-    // validar que no sea palabra prohibida, o similar, se hace en esta func o en donde? como devuelvo? formato Result?
 
     if (text.toLowerCase() === this.wordToGuess.word.toLowerCase()) {
       this.words.used.push(this.wordToGuess);
@@ -102,7 +95,19 @@ export class Game {
     return false;
   }
 
-  isPlayerTurn(userId) {
+  checkTabooWord(text) {
+    if (!text || !this.wordToGuess) return false;
+
+    const words = text.toLowerCase().split(/\s+/);
+    for (const word of words) {
+      if (this.wordToGuess.tabooWords.includes(word) || this.wordToGuess.word == word) {
+        return { isTaboo: true, word };
+      }
+    }
+    return { isTaboo: false };
+  }
+
+  isDescriptor(userId) {
     return this.currentDescriber === userId;
   }
 
@@ -128,12 +133,11 @@ export class Game {
     }
     this.chooseNextDescriber();
     await this.pickWord();
-    console.log("New word to guess:", this.wordToGuess);
+    // console.log("New word to guess:", this.wordToGuess);
   }
 
   gameFinish() {
     this.state = "finished";
-
     return { red: this.teams.red.score, blue: this.teams.blue.score };
   }
 

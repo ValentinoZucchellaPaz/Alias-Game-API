@@ -21,14 +21,14 @@ export default function ChatPanel({ messages, socket, roomCode, inGame }) {
     setText("");
   };
 
-  // Efecto: si hay autoScroll, baja al final cuando llegan mensajes
+  // scroll down to the bottom if autoscroll detected
   useEffect(() => {
     if (autoScroll && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, autoScroll]);
 
-  // Detectar cuando el usuario hace scroll manual
+  // detect when user makes an autoscroll
   const handleScroll = () => {
     const el = messagesContainerRef.current;
     if (!el) return;

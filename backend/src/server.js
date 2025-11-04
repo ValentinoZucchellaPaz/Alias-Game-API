@@ -1,17 +1,10 @@
-import express from "express";
 import app from "./app.js";
 import { syncDB } from "./models/sequelize/index.js";
 import { Server } from "socket.io";
 import { RedisClientSingleton } from "./config/redis.js";
 import { createServer } from "http";
-import path from "path";
-import { fileURLToPath } from "url";
 import registerRoomSocket from "./sockets/registerRoomSocket.js";
 import { SocketEventEmitter } from "./sockets/SocketEventEmmiter.js";
-
-// servir client
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use(express.static(path.join(__dirname, "client")));
 
 const PORT = 4000;
 

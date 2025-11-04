@@ -199,8 +199,11 @@ async function getRooms(limit = 10) {
 
 async function updateRoom(roomCode, gameScore) {
   const room = await getRoom(roomCode);
-  const winner = gameScore.red > gameScore.blue ? "red" : "blue";
-  room.globalScore[winner] += 1;
+  if (gameScore.red != gameScore.blue) {
+    // ties doesnt sum up points
+    const winner = gameScore.red > gameScore.blue ? "red" : "blue";
+    room.globalScore[winner] += 1;
+  }
   room.games.push(gameScore);
   await roomCache.hSet(roomCode, {
     globalScore: JSON.stringify(room.globalScore),

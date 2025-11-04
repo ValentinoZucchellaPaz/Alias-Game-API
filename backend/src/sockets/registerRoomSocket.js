@@ -42,13 +42,16 @@ export default function registerRoomSocket(io) {
 
     socket.on("game:message", async ({ code, user, text }) => {
       if (!text) return;
-      const { correct, game } = await gameService.checkForAnswer(user, text, code);
+      const { correct, game, isTaboo, word } = await gameService.checkForAnswer(user, text, code);
 
       if (correct) {
         console.log("el intento es correcto");
         SocketEventEmitter.gameCorrectAnswer(code, user, text, game);
+      } else if (isTaboo && word) {
+        console.log("taboo word incoming");
+        SocketEventEmitter.tabooWord(user, text, word);
       } else {
-        console.log("el intento es incorrecto");
+        console.log("el intento es incorrecto", isTaboo, word);
         SocketEventEmitter.sendMessage({ code, user, text });
       }
     });

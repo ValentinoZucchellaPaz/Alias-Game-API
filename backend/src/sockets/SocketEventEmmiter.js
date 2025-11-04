@@ -203,4 +203,15 @@ export class SocketEventEmitter {
     io.to(roomCode).emit("game:finished", results);
     console.log(`📢 Emitted game:finished for room=${roomCode}, results ${results}`);
   }
+
+  static async tabooWord(user, text, word) {
+    const socket = await this.getSocketByUserId(user.id);
+    console.log("taboo word emmited", user, text, word);
+    socket.emit("game:taboo-word", {
+      user,
+      text,
+      word,
+      message: `Word ${word} is a taboo word, you can't use it`,
+    });
+  }
 }

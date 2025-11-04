@@ -16,10 +16,8 @@ async function createGame(roomCode) {
   // }
 
   const words = await gameRepository.getWords();
-  console.log("estas son las palabras del juego", words);
-
   const game = new Game(roomCode, teams, words);
-  game.startGame();
+  await game.startGame();
 
   await saveGame(roomCode, game);
 
@@ -58,43 +56,40 @@ async function handleGameTurnNext(roomCode) {
 
   setTimerForGame(roomCode, game);
 
-  console.log("Emitting game turn update for room:", roomCode);
   SocketEventEmitter.gameTurnUpdated(roomCode, game); // feedback optimista
 
   await saveGame(roomCode, game);
 }
 
 async function checkForAnswer(user, text, roomCode) {
+  // validates if user guessing is a guesser from the team,
+
   const game = await getGame(roomCode);
+  if (game.state != "playing") return { correct: false, game };
 
-  // si game.status!=playing salir
-  // aca estaria bueno validar si el jugador es del equipo que adivina
-
-  // const isValidAttempt = game.isGuesser(user.id);
-  // if (!isValidAttempt) {
-  //   console.log("User is not a guesser:", user.id);
-  //   return false;
-  // }
-  const userTeam = Object.keys(game.teams).find((teamColor) =>
-    game.teams[teamColor].players.includes(user.id)
-  );
-  if (userTeam != game.currentTeam) return false;
+  const isGuesser = game.isGuesser(user.id);
+  if (!isGuesser) {
+    const isDescriptor = game.isDescriptor(user.id);
+    if (!isDescriptor) {
+      return { correct: false, game }; // is someone from the other team
+    }
+    const { isTaboo, word } = game.checkTabooWord(text);
+    return { correct: false, game, isTaboo, word };
+  }
 
   const correct = game.checkAnswer(text);
 
   if (correct) {
+    const userTeam = Object.keys(game.teams).find((teamColor) =>
+      game.teams[teamColor].players.includes(user.id)
+    );
     await game.pickWord();
-    //sumar un punto al equipo
-    console.log("puntaje previo", game.teams[userTeam].score);
     game.teams[userTeam].score++;
-    console.log("puntaje dps", game.teams[userTeam].score);
-    console.log("New word to guess:", game.wordToGuess);
 
     await saveGame(roomCode, game);
-    // enviar nueva palabra al descriptor
   }
 
-  console.log("Answer correct:", correct);
+  // console.log("Answer correct:", correct);
   return { correct, game };
 }
 

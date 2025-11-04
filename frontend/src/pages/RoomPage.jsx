@@ -141,6 +141,10 @@ export default function RoomPage() {
       ]);
     };
 
+    const handleTabooWord = ({ user, text, word, message }) => {
+      setError(message);
+    };
+
     const handleRoomUpdate = ({ globalScore, games }) => {
       setRoomData((prev) => ({ ...prev, globalScore, games }));
     };
@@ -153,6 +157,7 @@ export default function RoomPage() {
     socket.on("game:correct-answer", handleCorrectAnswer);
     socket.on("game:turn-updated", handleTurnUpdated);
     socket.on("game:finished", handleGameFinished);
+    socket.on("game:taboo-word", handleTabooWord);
     socket.on("room:updated", handleRoomUpdate);
 
     return () => {
@@ -164,6 +169,8 @@ export default function RoomPage() {
       socket.off("game:correct-answer", handleCorrectAnswer);
       socket.off("game:turn-updated", handleTurnUpdated);
       socket.off("game:finished", handleGameFinished);
+      socket.off("game:taboo-word", handleTabooWord);
+      socket.off("room:updated", handleRoomUpdate);
     };
   }, [socket, isConnected, roomCode]);
 
@@ -225,6 +232,17 @@ export default function RoomPage() {
 
       <main className="room-content">
         <aside className="room-sidebar">
+          <GlobalResults
+            red={roomData?.globalScore?.red}
+            blue={roomData?.globalScore?.blue}
+            roomState={roomState}
+          />
+
+          <GameResults // guarda resultados de ultimo juego pero puedo hacer que guarde historial
+            red={gameData?.results?.red}
+            blue={gameData?.results?.blue}
+            roomState={roomState}
+          />
           <TeamList
             user={user}
             teams={teams}
@@ -242,18 +260,6 @@ export default function RoomPage() {
           />
         </section>
       </main>
-
-      <GlobalResults
-        red={roomData?.globalScore?.red}
-        blue={roomData?.globalScore?.blue}
-        roomState={roomState}
-      />
-
-      <GameResults // guarda resultados de ultimo juego pero puedo hacer que guarde historial
-        red={gameData?.results?.red}
-        blue={gameData?.results?.blue}
-        roomState={roomState}
-      />
     </div>
   );
 }

@@ -50,6 +50,24 @@
   flex: 0 0 200px;
   background: #242424;
   overflow-y: auto;
+  padding-right: 8px;
+}
+
+.room-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.room-sidebar::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.room-sidebar::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.room-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .room-chat {
@@ -60,7 +78,7 @@
 }
 
 .results-panel {
-  margin-top: 1rem;
+  margin-bottom: 1rem;
   font-size: smaller;
 }
 
