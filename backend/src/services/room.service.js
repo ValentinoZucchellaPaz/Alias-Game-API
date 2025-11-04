@@ -33,12 +33,8 @@ async function createRoom({ hostId, hostName }) {
 
   await roomCache.hSet(roomCode, copy);
 
-  await SocketEventEmitter.joinRoom(roomCode, hostId, {
-    userName: hostName,
-    teams: roomData.teams,
-    players: roomData.teams,
-  });
-  await SocketEventEmitter.teamState(roomCode, roomData.teams);
+  await SocketEventEmitter.joinRoom(roomCode, hostId, hostName);
+  SocketEventEmitter.teamState(roomCode, roomData.teams);
 
   // TODO: if socket connection failed, how do I handle info persistency?
   return roomData;
@@ -118,12 +114,8 @@ async function joinRoom({ roomCode, userId, userName }) {
     teams: JSON.stringify(room.teams),
   });
 
-  await SocketEventEmitter.joinRoom(roomCode, userId, {
-    userName,
-    players: room.players,
-    teams: room.teams,
-  });
-  await SocketEventEmitter.teamState(roomCode, room.teams);
+  await SocketEventEmitter.joinRoom(roomCode, userId, userName);
+  SocketEventEmitter.teamState(roomCode, room.teams);
 
   return room;
 }
@@ -151,11 +143,7 @@ async function leaveRoom({ roomCode, userId, userName }) {
     await roomCache.del(room.code);
 
     // make all users of room leave room
-    await SocketEventEmitter.closeRoom(roomCode, userId, {
-      userName,
-      reason: "Host left",
-      globalScore: room.globalScore,
-    });
+    await SocketEventEmitter.closeRoom(roomCode, userId, userName, room.globalScore);
 
     return room;
   }
@@ -168,10 +156,8 @@ async function leaveRoom({ roomCode, userId, userName }) {
     teams: JSON.stringify(room.teams),
   });
 
-  await SocketEventEmitter.leaveRoom(roomCode, userId, {
-    userName,
-  });
-  await SocketEventEmitter.teamState(roomCode, room.teams);
+  await SocketEventEmitter.leaveRoom(roomCode, userId, userName);
+  SocketEventEmitter.teamState(roomCode, room.teams);
 
   return room;
 }
@@ -179,7 +165,7 @@ async function leaveRoom({ roomCode, userId, userName }) {
 async function updateTeams(roomCode, team, userId) {
   const room = await getRoom(roomCode);
 
-  // validaciones
+  // validaciones - agregar chequeo si se esta ingame, entonces no puede cambiar de equipo
   const player = room.players.find((p) => p.id === userId); // players: [{id, active}]
   if (!player || !player.active)
     throw new ConflictError(`User ${userId} is not in room ${roomCode}`);
@@ -195,7 +181,7 @@ async function updateTeams(roomCode, team, userId) {
     teams: JSON.stringify(room.teams),
   });
 
-  await SocketEventEmitter.teamState(roomCode, room.teams);
+  SocketEventEmitter.teamState(roomCode, room.teams);
 
   return room;
 }
@@ -211,32 +197,24 @@ async function getRooms(limit = 10) {
   return rooms.map((r) => r.get({ plain: true }));
 }
 
-// Actualizar estado de room
-// async function updateRoomStatus({ code, status }) {
-//   // puedo hacer http como tambien exclusivo de socket
-//   const room = await getRoom(code);
-//   room.status = status;
+async function updateRoom(roomCode, gameScore) {
+  const room = await getRoom(roomCode);
+  const winner = gameScore.red > gameScore.blue ? "red" : "blue";
+  room.globalScore[winner] += 1;
+  room.games.push(gameScore);
+  await roomCache.hSet(roomCode, {
+    globalScore: JSON.stringify(room.globalScore),
+    games: JSON.stringify(room.games),
+  });
+  console.log("a punto de actualizar db con room ", room);
+  await Room.update(
+    {
+      ...room,
+    },
+    { where: { code: roomCode } }
+  );
+  SocketEventEmitter.updateRoom(roomCode, room);
+  return room;
+}
 
-//   // JSON.stringigy a arrays y poner active como string antes de mandar a redis
-//   await roomCache.hSet(code, { status });
-
-//   // Si terminó la partida, sincronizar DB
-//   if (status === "finished") {
-//     await this.model.update(
-//       {
-//         players: room.players,
-//         teams: room.teams,
-//         globalScore: room.globalScore,
-//         games: room.games,
-//         status: room.status,
-//       },
-//       { where: { code } }
-//     );
-//     await roomCache.del(code);
-//   }
-
-//   // this.io.to(room.code).emit("room:status", { status });
-//   return room;
-// }
-
-export default { createRoom, getRoom, joinRoom, leaveRoom, updateTeams, getRooms };
+export default { createRoom, getRoom, joinRoom, leaveRoom, updateTeams, getRooms, updateRoom };

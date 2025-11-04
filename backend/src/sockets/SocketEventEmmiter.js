@@ -28,7 +28,7 @@ export class SocketEventEmitter {
    * @param {string|number} userId
    * @param {object} payload - optional (userName or players list)
    */
-  static async joinRoom(roomCode, userId, payload = {}) {
+  static async joinRoom(roomCode, userId, userName) {
     const io = SocketEventEmitter.getIO();
 
     const socket = await this.getSocketByUserId(userId);
@@ -38,13 +38,18 @@ export class SocketEventEmitter {
     for (const currentRoom of socket.rooms) {
       if (currentRoom === socket.id) continue; // socket id, own
       if (currentRoom === roomCode) {
-        console.log(`🔁 User ${userId} is already in room ${roomCode}, skipping rejoin`);
+        console.log(`🔁 User ${userName} is already in room ${roomCode}, skipping rejoin`);
         return;
       }
 
-      console.log(`🚪 Leaving previous room ${currentRoom} for user ${userId}`);
+      console.log(`🚪 Leaving previous room ${currentRoom} for user ${userName}`);
       await socket.leave(currentRoom);
-      io.to(currentRoom).emit("player:left", { userId });
+      io.to(currentRoom).emit("player:left", {
+        roomCode,
+        userId,
+        userName,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     if (!socket.rooms.has(roomCode)) {
@@ -55,10 +60,11 @@ export class SocketEventEmitter {
     io.to(roomCode).emit("player:joined", {
       userId,
       roomCode,
-      ...payload,
+      userName,
+      timestamp: new Date().toISOString(),
     });
 
-    console.log(`📢 Emitted player:joined for user=${userId} in room=${roomCode}`);
+    console.log(`📢 Emitted player:joined for user=${userName} in room=${roomCode}`);
   }
 
   /**
@@ -67,25 +73,27 @@ export class SocketEventEmitter {
    * @param {string|number} userId
    * @param {object} payload - optional (userName or players list)
    */
-  static async leaveRoom(roomCode, userId, payload = {}) {
+  static async leaveRoom(roomCode, userId, userName) {
+    console.log("haciendo leave room desde socket event emmiter");
     const io = SocketEventEmitter.getIO();
 
     const socket = await this.getSocketByUserId(userId);
     if (!socket) return;
 
     if (!socket.rooms.has(roomCode)) {
-      console.warn(`⚠️ User ${userId} is not in room ${roomCode}`);
+      console.warn(`⚠️ User ${userName} is not in room ${roomCode}`);
       return;
     }
 
     await socket.leave(roomCode);
-    console.log(`🚪 User ${userId} left room ${roomCode}`);
 
     io.to(roomCode).emit("player:left", {
+      roomCode,
       userId,
-      ...payload,
+      userName,
+      timestamp: new Date().toISOString(),
     });
-    console.log(`📢 Emitted player:left for user=${userId} in room=${roomCode}`);
+    console.log(`📢 Emitted player:left for user=${userName} in room=${roomCode}`);
   }
 
   /**
@@ -95,17 +103,18 @@ export class SocketEventEmitter {
    * @param {string|number} hostUserId
    * @param {object} payload - optional
    */
-  static async closeRoom(roomCode, hostUserId, payload = {}) {
+  static async closeRoom(roomCode, userId, userName, globalScore) {
     const io = SocketEventEmitter.getIO();
 
     // display feedback when kicked out of room
     io.to(roomCode).emit("room:close", {
-      hostUserId,
       roomCode,
-      ...payload,
+      userId,
+      userName,
+      globalScore,
     });
 
-    console.log(`📢 Emitted room:close for room=${roomCode} by host=${hostUserId}`);
+    console.log(`📢 Emitted room:close for room=${roomCode}`);
 
     // kick everyone out
     const roomSockets = io.sockets.adapter.rooms.get(roomCode);
@@ -119,7 +128,7 @@ export class SocketEventEmitter {
     }
   }
 
-  static async teamState(roomCode, teams) {
+  static teamState(roomCode, teams) {
     const io = SocketEventEmitter.getIO();
     io.to(roomCode).emit("team-state", teams);
     console.log(`📢 Emitted team-state for in room=${roomCode}`);
@@ -150,21 +159,47 @@ export class SocketEventEmitter {
     return socket;
   }
 
-  static async gameStarted(roomCode, game) {
+  static gameStarted(roomCode, game) {
     const io = SocketEventEmitter.getIO();
-    io.to(roomCode).emit("game:started", { game });
+    io.to(roomCode).emit("game:started", { game, timestamp: new Date().toISOString() });
     console.log(`📢 Emitted game:started for room=${roomCode}`);
   }
 
-  static async gameCorrectAnswer(roomCode, user, text) {
+  static gameCorrectAnswer(roomCode, user, text) {
     const io = SocketEventEmitter.getIO();
-    io.to(roomCode).emit("game:correct-answer", { user, text });
+    io.to(roomCode).emit("game:correct-answer", {
+      user,
+      text,
+      timestamp: new Date().toISOString(),
+    });
     console.log(`📢 Emitted game:correct-answer for room=${roomCode}, user=${user.id}`);
   }
 
-  static async gameTurnUpdated(roomCode, game) {
+  static gameTurnUpdated(roomCode, game) {
     const io = SocketEventEmitter.getIO();
     io.to(roomCode).emit("game:turn-updated", { game });
     console.log(`📢 Emitted game:turn-updated for room=${roomCode}`);
+  }
+
+  // hacer que los mensajes se manden con un metodo de aca
+  static sendMessage({ code, user, text }) {
+    const io = SocketEventEmitter.getIO();
+    io.to(code).emit("chat:message", {
+      user,
+      text,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  static updateRoom(roomCode, roomInfo) {
+    const io = SocketEventEmitter.getIO();
+    io.to(roomCode).emit("room:updated", roomInfo);
+    console.log(`📢 Emitted room:update for room=${roomCode}`);
+  }
+
+  static gameFinished(roomCode, results) {
+    const io = SocketEventEmitter.getIO();
+    io.to(roomCode).emit("game:finished", results);
+    console.log(`📢 Emitted game:finished for room=${roomCode}, results ${results}`);
   }
 }

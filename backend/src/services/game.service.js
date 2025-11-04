@@ -1,3 +1,4 @@
+import { gameCache } from "../config/redis.js";
 import { Game } from "../models/Game.js";
 import timeManager from "../models/TimerManager.js";
 import gameRepository from "../repositories/game.repository.js";
@@ -6,10 +7,16 @@ import { AppError } from "../utils/errors.js";
 import roomService from "./room.service.js";
 
 async function createGame(roomCode) {
-  const words = ["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "honeydew"];
-
   const room = await roomService.getRoom(roomCode);
   const teams = room.teams;
+
+  // usuario pertenece a room? room no esta en juego? si esta en juego o finished salir
+  // if (teams.some(team => team.players.length < 2)) {
+  //   throw new AppError("Each team must have at least 2 players.");
+  // }
+
+  const words = await gameRepository.getWords();
+  console.log("estas son las palabras del juego", words);
 
   const game = new Game(roomCode, teams, words);
   game.startGame();
@@ -41,7 +48,11 @@ async function handleGameTurnNext(roomCode) {
   if (game.state === "finished") {
     timeManager.clearTimer(roomCode);
     const results = game.gameFinish();
-    await saveGame(roomCode, game);
+
+    // update room results and delete game from redis
+    roomService.updateRoom(roomCode, results);
+    await gameCache.del(roomCode);
+    SocketEventEmitter.gameFinished(roomCode, results);
     return results;
   }
 
@@ -50,25 +61,36 @@ async function handleGameTurnNext(roomCode) {
   await saveGame(roomCode, game);
 
   console.log("Emitting game turn update for room:", roomCode);
-  await SocketEventEmitter.gameTurnUpdated(roomCode, game);
+  SocketEventEmitter.gameTurnUpdated(roomCode, game);
 }
 
 async function checkForAnswer(user, text, roomCode) {
   const game = await getGame(roomCode);
 
-  const isValidAttempt = game.isGuesser(user.id);
-  if (!isValidAttempt) {
-    console.log("User is not a guesser:", user.id);
-    return false;
-  }
+  // aca estaria bueno validar si el jugador es del equipo que adivina
+
+  // const isValidAttempt = game.isGuesser(user.id);
+  // if (!isValidAttempt) {
+  //   console.log("User is not a guesser:", user.id);
+  //   return false;
+  // }
+  const userTeam = Object.keys(game.teams).find((teamColor) =>
+    game.teams[teamColor].players.includes(user.id)
+  );
+  if (userTeam != game.currentTeam) return false;
 
   const correct = game.checkAnswer(text);
 
   if (correct) {
     game.pickWord();
+    //sumar un punto al equipo
+    console.log("puntaje previo", game.teams[userTeam].score);
+    game.teams[userTeam].score++;
+    console.log("puntaje dps", game.teams[userTeam].score);
     console.log("New word to guess:", game.wordToGuess);
 
     await saveGame(roomCode, game);
+    // enviar nueva palabra al descriptor
   }
 
   console.log("Answer correct:", correct);
@@ -76,9 +98,9 @@ async function checkForAnswer(user, text, roomCode) {
 }
 
 function setTimerForGame(roomCode, game) {
-  timeManager.startTimer(roomCode, 60, () => {
+  timeManager.startTimer(roomCode, game?.turnTime ?? 60, () => {
     if (game.state === "finished") {
-      timeManager.stopTimer(roomCode);
+      timeManager.clearTimer(roomCode);
       return;
     }
 

@@ -9,10 +9,7 @@ function serialize(myData) {
 
 function deserialize(obj) {
   return Object.fromEntries(
-    Object.entries(obj).map(([k, v]) => [
-      k,
-      v === "__undefined__" ? undefined : JSON.parse(v),
-    ])
+    Object.entries(obj).map(([k, v]) => [k, v === "__undefined__" ? undefined : JSON.parse(v)])
   );
 }
 

@@ -7,15 +7,15 @@ import { deserialize, serialize } from "../utils/objects.js";
 
 // }
 export class Game {
-  constructor(roomCode, teams, words, turns = 6) {
+  constructor(roomCode, teams, words, turns = 2) {
     this.roomCode = roomCode;
     this.teams = {
-      red: { players: teams.red || [], describer: 0 },
-      blue: { players: teams.blue || [], describer: 0 },
+      red: { players: teams.red || [], describer: 0, score: 0 },
+      blue: { players: teams.blue || [], describer: 0, score: 0 },
     };
     this.currentTeam = null;
-    this.currentDescriber = null;
-    this.wordToGuess = null;
+    this.currentDescriber = null; // user id
+    this.wordToGuess = null; // {wordId, word, taboo: [], similar: [{word, type, similarity}]}
     this.words = {
       used: [],
       unused: words,
@@ -23,8 +23,6 @@ export class Game {
     this.maxTurns = turns;
     this.turnsPlayed = 0;
     this.state = "waiting"; // playing || waiting || finished
-
-    console.log("Initialized new Game:", this.gameState());
   }
 
   static from(roomCode, data) {
@@ -40,6 +38,8 @@ export class Game {
       blue: deserializedData.teams.blue.players,
     };
     const game = new Game(roomCode, teams, []);
+    game.teams.red = deserializedData.teams.red;
+    game.teams.blue = deserializedData.teams.blue;
     game.currentTeam = deserializedData.currentTeam;
     game.currentDescriber = deserializedData.currentDescriber;
     game.wordToGuess = deserializedData.wordToGuess;
@@ -47,13 +47,12 @@ export class Game {
     game.maxTurns = deserializedData.maxTurns;
     game.turnsPlayed = deserializedData.turnsPlayed;
     game.state = deserializedData.state;
-    console.log("Reconstructed game from data:", game.gameState());
     return game;
   }
 
   async startGame() {
     // initialize game state
-    this.currentTeam = "red";
+    this.currentTeam = Math.random() > 0.5 ? "red" : "blue";
     this.currentDescriber = this.getCurrentDescriber();
 
     this.pickWord();
@@ -81,14 +80,19 @@ export class Game {
     // return a random word from the words array
     // e.g., a random element from this.words
     this.wordToGuess = this.words.unused[Math.floor(Math.random() * this.words.unused.length)];
+
+    // si se usaron todas las palabras se debe llamar por mas a la db
   }
 
   checkAnswer(text) {
     if (!text || !this.wordToGuess) return false;
 
-    if (text.toLowerCase() === this.wordToGuess.toLowerCase()) {
+    // filtrado inteligente: sacar puntos en el medio de la palabra, trim, sanitizar
+    // validar que no sea palabra prohibida, o similar, se hace en esta func o en donde? como devuelvo? formato Result?
+
+    if (text.toLowerCase() === this.wordToGuess.word.toLowerCase()) {
       this.words.used.push(this.wordToGuess);
-      this.words.unused = this.words.unused.filter((word) => word !== this.wordToGuess);
+      this.words.unused = this.words.unused.filter((w) => w.wordId !== this.wordToGuess.wordId);
       return true;
     }
     return false;
@@ -123,7 +127,11 @@ export class Game {
     console.log("New word to guess:", this.wordToGuess);
   }
 
-  gameFinish() {}
+  gameFinish() {
+    this.state = "finished";
+
+    return { red: this.teams.red.score, blue: this.teams.blue.score };
+  }
 
   gameState() {
     // save game state to Redis

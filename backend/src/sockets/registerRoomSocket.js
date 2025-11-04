@@ -37,12 +37,7 @@ export default function registerRoomSocket(io) {
     socketCache.set(socket.userId, socket.id);
 
     socket.on("chat:message", ({ code, user, text }) => {
-      console.log("esta llegando un mensaje", { code, user, text });
-      io.to(code).emit("chat:message", {
-        user,
-        text,
-        timestamp: new Date().toISOString(),
-      });
+      SocketEventEmitter.sendMessage({ code, user, text });
     });
 
     socket.on("game:message", async ({ code, user, text }) => {
@@ -51,14 +46,10 @@ export default function registerRoomSocket(io) {
 
       if (attempt) {
         console.log("el intento es correcto");
-        await SocketEventEmitter.gameCorrectAnswer(code, user, text);
+        SocketEventEmitter.gameCorrectAnswer(code, user, text);
       } else {
         console.log("el intento es incorrecto");
-        io.to(code).emit("chat:message", {
-          user,
-          text,
-          timestamp: new Date().toISOString(),
-        });
+        SocketEventEmitter.sendMessage({ code, user, text });
       }
     });
 
@@ -80,15 +71,18 @@ export default function registerRoomSocket(io) {
           const userName = socket.userName;
           await roomService.leaveRoom({
             roomCode,
-            userId: socket.userId,
-            userName: socket.userName,
-          });
-
-          io.to(roomCode).emit("player:left", {
             userId,
             userName,
           });
+          io.to(roomCode).emit("player:left", {
+            roomCode,
+            userId,
+            userName,
+            timestamp: new Date().toISOString(),
+          });
         }
+
+        // actualizar para que tenga en cuenta desconexiones durante un juego
 
         // Limpiar mapping de Redis
         await socketCache.del(socket.userId);
