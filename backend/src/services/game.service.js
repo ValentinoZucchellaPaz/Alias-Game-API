@@ -43,7 +43,7 @@ async function getGame(roomCode) {
 
 async function handleGameTurnNext(roomCode) {
   const game = await getGame(roomCode);
-  game.nextTurn();
+  await game.nextTurn();
 
   if (game.state === "finished") {
     timeManager.clearTimer(roomCode);
@@ -83,7 +83,7 @@ async function checkForAnswer(user, text, roomCode) {
   const correct = game.checkAnswer(text);
 
   if (correct) {
-    game.pickWord();
+    await game.pickWord();
     //sumar un punto al equipo
     console.log("puntaje previo", game.teams[userTeam].score);
     game.teams[userTeam].score++;

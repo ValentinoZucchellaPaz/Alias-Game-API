@@ -19,6 +19,7 @@ export default function Home() {
       const res = await api.get("http://localhost:4000/api/rooms", {
         withCredentials: true,
       });
+      console.log("rooms", res.data);
       setRooms(res.data);
     } catch (err) {
       setError(err.response.data.message || err.message);

@@ -3,6 +3,7 @@
 //   similarity: [],
 //   prohibited: []
 
+import gameRepository from "../repositories/game.repository.js";
 import { deserialize, serialize } from "../utils/objects.js";
 
 // }
@@ -55,7 +56,7 @@ export class Game {
     this.currentTeam = Math.random() > 0.5 ? "red" : "blue";
     this.currentDescriber = this.getCurrentDescriber();
 
-    this.pickWord();
+    await this.pickWord();
     this.state = "playing";
 
     console.log("Game started:", this.gameState());
@@ -76,9 +77,12 @@ export class Game {
     return currTeam.players[currentDescriberIndex];
   }
 
-  pickWord() {
+  async pickWord() {
     // return a random word from the words array
     // e.g., a random element from this.words
+    if (!this.words.unused.length) {
+      this.words.unused = await gameRepository.getWords(this.words.used.map((w) => w.word));
+    }
     this.wordToGuess = this.words.unused[Math.floor(Math.random() * this.words.unused.length)];
 
     // si se usaron todas las palabras se debe llamar por mas a la db
@@ -107,7 +111,7 @@ export class Game {
     return this.teams[currentTeam].players.includes(userId) && userId !== this.currentDescriber;
   }
 
-  nextTurn() {
+  async nextTurn() {
     this.turnsPlayed += 1;
 
     // check if max turns reached
@@ -123,7 +127,7 @@ export class Game {
       this.currentTeam = "red";
     }
     this.chooseNextDescriber();
-    this.pickWord();
+    await this.pickWord();
     console.log("New word to guess:", this.wordToGuess);
   }
 

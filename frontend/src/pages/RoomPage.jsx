@@ -7,6 +7,7 @@ import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import "./css/room-page.css";
 import Timer from "../components/Timer";
+import RoomHeader from "../components/RoomHeader";
 
 export default function RoomPage() {
   const { roomCode } = useParams();
@@ -14,6 +15,7 @@ export default function RoomPage() {
   const { user } = useAuth();
   const [gameData, setGameData] = useState(null);
   const [roomState, setRoomState] = useState("lobby");
+  const [roomData, setRoomData] = useState(null);
   const [teams, setTeams] = useState({ red: [], blue: [] });
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +130,7 @@ export default function RoomPage() {
 
     const handleGameFinished = (results) => {
       setGameData((prev) => ({ ...prev, results }));
-      setRoomState("finished");
+      setRoomState("lobby");
       setMessages((prev) => [
         ...prev,
         {
@@ -139,6 +141,10 @@ export default function RoomPage() {
       ]);
     };
 
+    const handleRoomUpdate = ({ globalScore, games }) => {
+      setRoomData((prev) => ({ ...prev, globalScore, games }));
+    };
+
     socket.on("player:joined", handlePlayerJoined);
     socket.on("player:left", handlePlayerLeft);
     socket.on("chat:message", handleChatMessage);
@@ -147,6 +153,7 @@ export default function RoomPage() {
     socket.on("game:correct-answer", handleCorrectAnswer);
     socket.on("game:turn-updated", handleTurnUpdated);
     socket.on("game:finished", handleGameFinished);
+    socket.on("room:updated", handleRoomUpdate);
 
     return () => {
       socket.off("player:joined", handlePlayerJoined);
@@ -180,8 +187,7 @@ export default function RoomPage() {
         setGameData(res.data);
       }
     } catch (error) {
-      console.error(error);
-      alert("Error starting the game");
+      setError(error.response?.data?.message || "Error starting game");
     }
   };
 
@@ -194,6 +200,7 @@ export default function RoomPage() {
     }
   };
 
+  // Render
   if (loading)
     return (
       <p style={{ textAlign: "center", margin: "50% auto" }}>Loading room...</p>
@@ -207,36 +214,19 @@ export default function RoomPage() {
         </p>
       )}
 
-      <header className="room-header">
-        <h1>Room: {roomCode}</h1>
-
-        <div className="header-controls">
-          {roomState === "in-game" && gameData && (
-            <div className="game-status-wrapper">
-              <GameStatusPanel gameData={gameData} user={user} />
-              <Timer
-                key={gameData?.currentTeam}
-                seconds={60}
-                resetKey={gameData?.currentTeam}
-                onComplete={() => console.log("⏰ end of your turn")}
-              />
-            </div>
-          )}
-
-          {roomState === "lobby" && (
-            <button className="start-button" onClick={handleStartGame}>
-              Start Game
-            </button>
-          )}
-          <button className="leave-button" onClick={handleLeaveRoom}>
-            Leave
-          </button>
-        </div>
-      </header>
+      <RoomHeader
+        roomCode={roomCode}
+        roomState={roomState}
+        gameData={gameData}
+        user={user}
+        onStartGame={handleStartGame}
+        onLeaveRoom={handleLeaveRoom}
+      />
 
       <main className="room-content">
         <aside className="room-sidebar">
           <TeamList
+            user={user}
             teams={teams}
             onJoinRed={() => handleJoinTeam("red")}
             onJoinBlue={() => handleJoinTeam("blue")}
@@ -253,37 +243,42 @@ export default function RoomPage() {
         </section>
       </main>
 
-      {roomState === "finished" && gameData && (
-        <div className="results-panel">
-          <h2>🏁 Final Results</h2>
-          <p>Red Team: {gameData.results?.red ?? 0} pts</p>
-          <p>Blue Team: {gameData.results?.blue ?? 0} pts</p>
-        </div>
-      )}
+      <GlobalResults
+        red={roomData?.globalScore?.red}
+        blue={roomData?.globalScore?.blue}
+        roomState={roomState}
+      />
+
+      <GameResults // guarda resultados de ultimo juego pero puedo hacer que guarde historial
+        red={gameData?.results?.red}
+        blue={gameData?.results?.blue}
+        roomState={roomState}
+      />
     </div>
   );
 }
 
-// -----------------------------
-// 📊 Live Game Status Component
-// -----------------------------
-function GameStatusPanel({ gameData, user }) {
-  const isDescriber = gameData.currentDescriber === user.id;
-  const currentWord = gameData?.wordToGuess?.word || "—";
-  const redScore = gameData?.teams?.red?.score ?? 0;
-  const blueScore = gameData?.teams?.blue?.score ?? 0;
-
+function GlobalResults({ red, blue, roomState }) {
   return (
-    <div className="game-status-panel">
-      <div className="scores">
-        <span className="score red">🔴 {redScore}</span>
-        <span className="score blue">🔵 {blueScore}</span>
+    (roomState === "lobby" ?? red ?? blue) && (
+      <div className="results-panel">
+        <h2>🏁 Global Results</h2>
+        <p>Red Team: {red} pts</p>
+        <p>Blue Team: {blue} pts</p>
       </div>
-      {isDescriber && (
-        <p className="current-word">
-          Word: <strong>{currentWord}</strong>
-        </p>
-      )}
-    </div>
+    )
+  );
+}
+
+// componente que muestra resultados finales
+function GameResults({ red, blue, roomState }) {
+  return (
+    (roomState === "lobby" ?? red ?? blue) && (
+      <div className="results-panel">
+        <h2>🏁 Game Results</h2>
+        <p>Red Team: {red} pts</p>
+        <p>Blue Team: {blue} pts</p>
+      </div>
+    )
   );
 }

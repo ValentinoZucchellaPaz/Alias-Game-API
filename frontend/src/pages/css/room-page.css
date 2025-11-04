@@ -59,6 +59,11 @@
   overflow: hidden;
 }
 
+.results-panel {
+  margin-top: 1rem;
+  font-size: smaller;
+}
+
 @media (max-width: 768px) {
   .room-content {
     flex-direction: column;

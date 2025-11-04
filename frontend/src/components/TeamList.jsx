@@ -1,13 +1,14 @@
 import "./css/team-list.css";
-export default function TeamList({ teams, onJoinRed, onJoinBlue }) {
-  console.log(teams);
+export default function TeamList({ teams, onJoinRed, onJoinBlue, user }) {
   return (
     <div className="team-list">
       <div className="team-section red">
         <h2>Equipo Rojo 🔴</h2>
         <ul>
           {teams.red.map((p) => (
-            <li key={p}>{p}</li>
+            <li key={p}>
+              {p} {user?.id == p && " (you)"}
+            </li>
           ))}
         </ul>
         <button onClick={onJoinRed}>Unirse al Rojo</button>
@@ -17,7 +18,9 @@ export default function TeamList({ teams, onJoinRed, onJoinBlue }) {
         <h2>Equipo Azul 🔵</h2>
         <ul>
           {teams.blue.map((p) => (
-            <li key={p}>{p}</li>
+            <li key={p}>
+              {p} {user?.id == p && " (you)"}
+            </li>
           ))}
         </ul>
         <button onClick={onJoinBlue}>Unirse al Azul</button>

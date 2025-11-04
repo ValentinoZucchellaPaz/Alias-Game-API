@@ -1,3 +1,4 @@
+import sequelize from "../config/db.js";
 import { gameCache } from "../config/redis.js";
 import { SimilarWord, TabooWord, Word } from "../models/sequelize/words/index.js";
 import { Op } from "sequelize";
@@ -17,7 +18,7 @@ async function updateGame(roomCode, gameData) {
 
 // TODO: funcion para eliminar game de redis, por ejemplo cuando se van muchos jugadores
 
-async function getWords(usedWords = [], limit = 20) {
+async function getWords(usedWords = [], limit = 10) {
   // build where clause to exclude usedWords (detect if IDs or text)
   const where = {};
   if (usedWords && usedWords.length) {
@@ -27,7 +28,7 @@ async function getWords(usedWords = [], limit = 20) {
   const words = await Word.findAll({
     where,
     limit,
-    order: [["id", "ASC"]],
+    order: sequelize.random(), // Use random order for more variability
     raw: true,
   });
 
