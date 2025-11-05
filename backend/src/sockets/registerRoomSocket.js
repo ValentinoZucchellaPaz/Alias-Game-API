@@ -1,9 +1,16 @@
 import { socketCache } from "../config/redis.js";
 import gameService from "../services/game.service.js";
 import roomService from "../services/room.service.js";
-import { AppError } from "../utils/errors.js";
-import jwt from "../utils/jwt.js";
+import {
+  chatRateLimitMiddleware,
+  gameChatRateLimitMiddleware,
+  joinTeamRateLimitMiddleware,
+} from "../middlewares/socketMiddlewares/events.js";
 import { SocketEventEmitter } from "./SocketEventEmmiter.js";
+import {
+  socketAuthMiddleware,
+  socketConnectionRateLimitMiddleware,
+} from "../middlewares/socketMiddlewares/connection.js";
 
 // src/sockets/registerRoomSocket.js
 /**
@@ -11,37 +18,31 @@ import { SocketEventEmitter } from "./SocketEventEmmiter.js";
  * @param {Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>} io
  */
 export default function registerRoomSocket(io) {
-  // middleware
-  io.use(async (socket, next) => {
-    const token = socket.handshake.auth?.token;
-    if (!token) return next(new Error("No token in handshake auth"));
-
-    const payload = jwt.verifyAccessToken({ token });
-    if (!payload) return next(new Error("Invalid token in handshake auth")); // lanza evento "connect_error" que el cliente debe recibir y rechaza conexion del socket
-
-    socket.userId = payload.id;
-    socket.userName = payload.name;
-    socket.userRole = payload.role;
-
-    // antes de esto, veo de que no haya ningun otro socket abierto del mismo usuario, si lo hay y no me dijeron q lo sobreescriba lo dejo
-    const overrideSocket = socket.handshake.auth?.override;
-    const prevSocket = await socketCache.get(socket.userId);
-    if (prevSocket && !overrideSocket)
-      return next(new AppError(`ya existe una conexion abierta para este user ${socket.userId}`));
-    next();
-  });
+  /*
+   * socket connection middlewares
+   */
+  // Rate limiter middleware
+  io.use(socketConnectionRateLimitMiddleware);
+  // Socket Auth middleware
+  io.use(socketAuthMiddleware);
 
   io.on("connection", (socket) => {
     console.log(`Socket conectado: ${socket.id}`);
 
+    // Event rate limiters
+    socket.use(chatRateLimitMiddleware(socket));
+    socket.use(gameChatRateLimitMiddleware(socket));
+    socket.use(joinTeamRateLimitMiddleware(socket));
+
     socketCache.set(socket.userId, socket.id);
 
-    socket.on("chat:message", ({ code, user, text }) => {
+    socket.on("chat:message", async ({ code, user, text }) => {
       SocketEventEmitter.sendMessage({ code, user, text });
     });
 
     socket.on("game:message", async ({ code, user, text }) => {
       if (!text) return;
+
       const { correct, game, isTaboo, word } = await gameService.checkForAnswer(user, text, code);
 
       if (correct) {

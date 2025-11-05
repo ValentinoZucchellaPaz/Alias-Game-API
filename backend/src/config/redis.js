@@ -1,4 +1,4 @@
-import { createClient } from "redis";
+import Redis from "ioredis";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -11,16 +11,21 @@ class RedisClientSingleton {
       return RedisClientSingleton.instance;
     }
 
-    const client = createClient({
-      url:
-        process.env.REDIS_URL ||
-        `redis://${process.env.REDIS_HOST || "localhost"}:${process.env.REDIS_PORT || 6379}`,
+    // Create new ioredis client
+    const client = new Redis({
+      host: process.env.REDIS_HOST || "localhost",
+      port: process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : 6379,
       password: process.env.REDIS_PASSWORD || undefined,
+      lazyConnect: true, // manual connect for timeout race
     });
 
     client.on("error", (err) => console.error("❌ Redis Client Error:", err));
+    client.on("end", () => {
+      RedisClientSingleton.connected = false;
+      console.warn("⚠️ Redis connection closed");
+    });
 
-    // conexión con timeout para evitar cuelgues
+    // timeout protection
     const connectPromise = client.connect();
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error("Redis connection timeout")), timeoutMs)
@@ -30,10 +35,11 @@ class RedisClientSingleton {
       await Promise.race([connectPromise, timeoutPromise]);
       RedisClientSingleton.instance = client;
       RedisClientSingleton.connected = true;
-      console.log("✅ Connected to Redis (singleton)");
+      console.log("✅ Connected to Redis (singleton, ioredis)");
       return client;
     } catch (err) {
       console.error("❌ Redis connection failed:", err.message);
+      client.disconnect();
       throw err;
     }
   }
@@ -47,7 +53,7 @@ class RedisClientSingleton {
   }
 }
 
-class Redis {
+class RedisWrapper {
   client;
   ttl;
   prefix;
@@ -71,9 +77,7 @@ class Redis {
 
   async set(key, value, ttl) {
     await this.init();
-    await this.client.set(this._key(key), JSON.stringify(value), {
-      EX: ttl ?? this.ttl,
-    });
+    await this.client.set(this._key(key), JSON.stringify(value), "EX", ttl ?? this.ttl);
   }
 
   async get(key) {
@@ -92,25 +96,31 @@ class Redis {
   async hSet(key, data, ttl) {
     await this.init();
     console.log("redisClient.hSet (esto se esta guardando en redis):", this._key(key), data, ttl);
-    await this.client.hSet(this._key(key), data, ttl ?? this.ttl);
+    await this.client.hset(this._key(key), data);
     if (ttl ?? this.ttl) await this.client.expire(this._key(key), ttl ?? this.ttl);
   }
 
   async hGetAll(key) {
     await this.init();
-    const data = await this.client.hGetAll(this._key(key));
+    const data = await this.client.hgetall(this._key(key));
+    console.log("redisClient.hGetAll (esto se esta sacando de redis):", this._key(key), data);
     return Object.keys(data).length ? data : null;
   }
 }
 
+// para otros modulos que necesiten el client directamente
+export async function getRedisClient() {
+  return await RedisClientSingleton.getInstance();
+}
+
 // muchos redis client para cada cosa
-const tokenCache = new Redis({ ttl: 24 * 3600, prefix: "alias-game:token:" }); // min duracion token 1 dia
-const roomCache = new Redis({ ttl: 6 * 3600, prefix: "alias-game:room:" }); // code:hSet
-const gameCache = new Redis({ ttl: 6 * 3600, prefix: "alias-game:game:" }); // code:hSet
-const socketCache = new Redis({
+const tokenCache = new RedisWrapper({ ttl: 24 * 3600, prefix: "alias-game:token:" }); // min duracion token 1 dia
+const roomCache = new RedisWrapper({ ttl: 6 * 3600, prefix: "alias-game:room:" }); // code:hSet
+const gameCache = new RedisWrapper({ ttl: 6 * 3600, prefix: "alias-game:game:" }); // code:hSet
+const socketCache = new RedisWrapper({
   ttl: 6 * 3600,
   prefix: "alias-game:userSocket:",
 }); // userId:socketId
-const healthTestCache = new Redis({ ttl: 600, prefix: "health:" });
+const healthTestCache = new RedisWrapper({ ttl: 600, prefix: "health:" });
 
 export { tokenCache, roomCache, gameCache, socketCache, RedisClientSingleton, healthTestCache };

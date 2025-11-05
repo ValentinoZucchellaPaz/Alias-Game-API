@@ -2,8 +2,9 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import { globalLimiterMiddleware } from "./middlewares/http/limiters/rateLimiters.js";
 
-import { errorHandler } from "./middlewares/errorHandler.js";
+import { errorHandler } from "./middlewares/http/errorHandler.js";
 import authRoutes from "./routes/auth.routes.js";
 import roomRoutes from "./routes/room.routes.js";
 
@@ -20,6 +21,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(globalLimiterMiddleware);
 
 // routes
 app.use("/api/auth", authRoutes);
