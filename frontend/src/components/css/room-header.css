@@ -53,16 +53,23 @@
   color: #fff;
 }
 
-.current-word,
+.current-word {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.current-word p,
 .current-team {
   font-size: 1.2rem;
-  margin-bottom: 4px;
 }
 
 .scores {
   display: flex;
   gap: 12px;
   font-weight: bold;
+  margin: 6px auto;
 }
 
 .scores span {

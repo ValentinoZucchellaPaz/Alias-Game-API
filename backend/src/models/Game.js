@@ -1,12 +1,6 @@
-// {
-//   word: string;
-//   similarity: [],
-//   prohibited: []
-
 import gameRepository from "../repositories/game.repository.js";
 import { deserialize, serialize } from "../utils/objects.js";
 
-// }
 export class Game {
   constructor(roomCode, teams, words, turns = 2) {
     this.roomCode = roomCode;
@@ -24,6 +18,11 @@ export class Game {
     this.maxTurns = turns;
     this.turnsPlayed = 0;
     this.state = "waiting"; // playing || waiting || finished
+    this.cooldown = {
+      lastSkipTime: null, // timestamp
+      describerId: null, // user id
+      count: 0, // multiplier
+    };
   }
 
   static from(roomCode, data) {
@@ -48,6 +47,7 @@ export class Game {
     game.maxTurns = deserializedData.maxTurns;
     game.turnsPlayed = deserializedData.turnsPlayed;
     game.state = deserializedData.state;
+    game.cooldown = deserializedData.cooldown;
     return game;
   }
 
@@ -150,10 +150,37 @@ export class Game {
       currentTeam: this.currentTeam,
       currentDescriber: this.currentDescriber,
       words: this.words,
+      wordToGuess: this.wordToGuess,
+      cooldown: this.cooldown,
       maxTurns: this.maxTurns,
       turnsPlayed: this.turnsPlayed,
       state: this.state,
-      wordToGuess: this.wordToGuess,
     });
+  }
+
+  /**
+   *
+   * @param {string} userId
+   * @returns remaining cooldown time or null if none
+   */
+  checkAndUpdateCooldown(userId) {
+    const BASE_COOLDOWN = 3000;
+    const now = Date.now();
+    const cd = this.cooldown;
+
+    if (cd.describerId !== userId) {
+      cd.describerId = userId; // change prev
+      cd.count = 0;
+    }
+
+    const delay = BASE_COOLDOWN * (cd.count + 1);
+    if (cd.lastSkipTime && now - cd.lastSkipTime < delay) {
+      const remaining = Math.ceil((delay - (now - cd.lastSkipTime)) / 1000);
+      return remaining;
+    }
+
+    cd.lastSkipTime = now;
+    cd.count++;
+    return null;
   }
 }

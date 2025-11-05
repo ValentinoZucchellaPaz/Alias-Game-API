@@ -163,6 +163,18 @@ export class SocketEventEmitter {
       .emit("game:finished", buildPayload("game:finished", "system", { results }, "Game finished"));
   }
 
+  static async sendNewWord(userId, roomCode, game, errorMessage) {
+    const io = this.getIO();
+    if (!game && errorMessage) {
+      // error msge is sent only to user that originated the event
+      const socket = await this.getSocketByUserId(userId);
+      if (!socket) return;
+      socket.emit("game:new-word", buildPayload("game:new-word", "error", {}, errorMessage));
+      return;
+    }
+    io.to(roomCode).emit("game:new-word", buildPayload("game:new-word", "info", { game }));
+  }
+
   // Chat & State Events
   static sendMessage({ code, user, text, type = "chat" }) {
     this.getIO()

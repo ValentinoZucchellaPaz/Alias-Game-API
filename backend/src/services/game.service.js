@@ -63,7 +63,7 @@ async function handleGameTurnNext(roomCode) {
   await saveGame(roomCode, game);
 }
 
-export async function checkForAnswer(user, text, roomCode) {
+async function checkForAnswer(userId, text, roomCode) {
   const cleanedText = cleanText(text);
   const game = await getGame(roomCode);
 
@@ -76,8 +76,8 @@ export async function checkForAnswer(user, text, roomCode) {
     });
   }
 
-  const isGuesser = game.isGuesser(user.id);
-  const isDescriptor = game.isDescriptor(user.id);
+  const isGuesser = game.isGuesser(userId);
+  const isDescriptor = game.isDescriptor(userId);
 
   // CASE 1: Guesser -> try to guess the word
   if (isGuesser) {
@@ -85,7 +85,7 @@ export async function checkForAnswer(user, text, roomCode) {
 
     if (correct) {
       const userTeam = Object.keys(game.teams).find((teamColor) =>
-        game.teams[teamColor].players.includes(user.id)
+        game.teams[teamColor].players.includes(userId)
       );
 
       // update score & get new word
@@ -143,6 +143,22 @@ export async function checkForAnswer(user, text, roomCode) {
   });
 }
 
+async function getNewWord(userId, roomCode) {
+  const game = await getGame(roomCode);
+
+  if (game.currentDescriber != userId)
+    throw new AppError("User requesting new word is not current describer");
+
+  if (game.state != "playing") throw new AppError("Only can provide new word to playing games");
+
+  const remaining = game.checkAndUpdateCooldown(userId);
+  if (remaining) throw new AppError(`Must wait ${remaining}s before skipping this word.`);
+
+  await game.pickWord();
+  await saveGame(roomCode, game);
+  return game;
+}
+
 function setTimerForGame(roomCode, game) {
   timeManager.startTimer(roomCode, game?.turnTime ?? 60, () => {
     if (game.state === "finished") {
@@ -159,4 +175,4 @@ async function saveGame(roomCode, game) {
   return await gameRepository.updateGame(roomCode, gameData);
 }
 
-export default { createGame, getGame, handleGameTurnNext, checkForAnswer };
+export default { createGame, getGame, handleGameTurnNext, checkForAnswer, getNewWord };

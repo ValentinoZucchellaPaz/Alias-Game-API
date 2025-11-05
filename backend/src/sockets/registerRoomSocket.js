@@ -5,9 +5,9 @@ import { AppError } from "../utils/errors.js";
 import jwt from "../utils/jwt.js";
 import { SocketEventEmitter } from "./SocketEventEmmiter.js";
 
-// src/sockets/registerRoomSocket.js
+// FIXME: idea, que se cambien los eventos para que se dependa menos de las props que se pasan del front, sacar info de redis o de la instancia del socket de aca
+
 /**
- *
  * @param {Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>} io
  */
 export default function registerRoomSocket(io) {
@@ -44,7 +44,7 @@ export default function registerRoomSocket(io) {
       if (!text?.trim()) return;
 
       try {
-        const result = await gameService.checkForAnswer(user, text, code);
+        const result = await gameService.checkForAnswer(user.id, text, code);
 
         switch (result.type) {
           case "answer":
@@ -65,6 +65,15 @@ export default function registerRoomSocket(io) {
         }
       } catch (err) {
         console.error("Error processing game message: ", err);
+      }
+    });
+
+    socket.on("game:skip-word", async ({ userId, roomCode }) => {
+      try {
+        const game = await gameService.getNewWord(userId, roomCode); // retorna el juego o lanza un error
+        SocketEventEmitter.sendNewWord(userId, roomCode, game);
+      } catch (error) {
+        SocketEventEmitter.sendNewWord(userId, roomCode, null, error.message);
       }
     });
 

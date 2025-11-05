@@ -113,6 +113,27 @@ export default function RoomPage() {
           ]);
           break;
 
+        case "game:new-word":
+          console.log(
+            "recibiendo new word",
+            type,
+            status,
+            data,
+            message,
+            timestamp
+          );
+          if (status == "error" && message) {
+            console.log("error en new word");
+            setError(message);
+            break;
+          }
+          setGameData(data.game);
+          setMessages((prev) => [
+            ...prev,
+            { text: "A new word was chosen!", status, timestamp },
+          ]);
+          break;
+
         case "game:taboo-word":
           setError(message);
           break;
@@ -137,6 +158,7 @@ export default function RoomPage() {
       "game:turn-updated",
       "game:finished",
       "game:taboo-word",
+      "game:new-word",
       "room:updated",
     ];
 
@@ -180,6 +202,10 @@ export default function RoomPage() {
     }
   };
 
+  const handleSkipWord = () => {
+    socket.emit("game:skip-word", { userId: user.id, roomCode });
+  };
+
   // Render
   if (loading)
     return (
@@ -201,6 +227,7 @@ export default function RoomPage() {
         user={user}
         onStartGame={handleStartGame}
         onLeaveRoom={handleLeaveRoom}
+        onSkipWord={handleSkipWord}
       />
 
       <main className="room-content">

@@ -8,6 +8,7 @@ export default function RoomHeader({
   user,
   onStartGame,
   onLeaveRoom,
+  onSkipWord,
 }) {
   console.log(gameData, roomState);
   return (
@@ -19,9 +20,12 @@ export default function RoomHeader({
           <>
             <div className="game-status">
               {gameData.currentDescriber === user.id && (
-                <p className="current-word">
-                  Word: <strong>{gameData.wordToGuess?.word}</strong>
-                </p>
+                <div className="current-word">
+                  <p>
+                    Word: <strong>{gameData.wordToGuess?.word}</strong>
+                  </p>
+                  <button onClick={onSkipWord}>Skip Word</button>
+                </div>
               )}
 
               {gameData.currentTeam && (
