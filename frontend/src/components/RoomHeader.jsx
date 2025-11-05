@@ -9,6 +9,7 @@ export default function RoomHeader({
   onStartGame,
   onLeaveRoom,
 }) {
+  console.log(gameData, roomState);
   return (
     <header className="room-header">
       <h1>Room: {roomCode}</h1>

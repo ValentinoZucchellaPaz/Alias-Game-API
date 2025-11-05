@@ -2,8 +2,10 @@ import { gameCache } from "../config/redis.js";
 import { Game } from "../models/Game.js";
 import timeManager from "../models/TimerManager.js";
 import gameRepository from "../repositories/game.repository.js";
+import { MessageCheckResultSchema } from "../schemas/word.schema.js";
 import { SocketEventEmitter } from "../sockets/SocketEventEmmiter.js";
 import { AppError } from "../utils/errors.js";
+import { checkTabooWord, cleanText } from "../utils/words.js";
 import roomService from "./room.service.js";
 
 async function createGame(roomCode) {
@@ -61,36 +63,84 @@ async function handleGameTurnNext(roomCode) {
   await saveGame(roomCode, game);
 }
 
-async function checkForAnswer(user, text, roomCode) {
-  // validates if user guessing is a guesser from the team,
-
+export async function checkForAnswer(user, text, roomCode) {
+  const cleanedText = cleanText(text);
   const game = await getGame(roomCode);
-  if (game.state != "playing") return { correct: false, game };
+
+  if (!game || game.state !== "playing" || !cleanedText) {
+    return MessageCheckResultSchema.parse({
+      type: "invalid",
+      correct: false,
+      taboo: false,
+      game,
+    });
+  }
 
   const isGuesser = game.isGuesser(user.id);
-  if (!isGuesser) {
-    const isDescriptor = game.isDescriptor(user.id);
-    if (!isDescriptor) {
-      return { correct: false, game }; // is someone from the other team
+  const isDescriptor = game.isDescriptor(user.id);
+
+  // CASE 1: Guesser -> try to guess the word
+  if (isGuesser) {
+    const correct = cleanedText === cleanText(game.wordToGuess.word);
+
+    if (correct) {
+      const userTeam = Object.keys(game.teams).find((teamColor) =>
+        game.teams[teamColor].players.includes(user.id)
+      );
+
+      // update score & get new word
+      game.teams[userTeam].score++;
+      await game.pickWord();
+      await saveGame(roomCode, game);
+
+      return MessageCheckResultSchema.parse({
+        type: "answer",
+        correct: true,
+        taboo: false,
+        word: game.wordToGuess.word,
+        game,
+      });
     }
-    const { isTaboo, word } = game.checkTabooWord(text);
-    return { correct: false, game, isTaboo, word };
+
+    // Incorrect guess
+    return MessageCheckResultSchema.parse({
+      type: "answer",
+      correct: false,
+      taboo: false,
+      game,
+    });
   }
 
-  const correct = game.checkAnswer(text);
+  // CASE 2: Descriptor -> check if used a taboo word
+  if (isDescriptor) {
+    const tabooWords = [game.wordToGuess.word, ...(game.wordToGuess.tabooWords || [])];
+    const tabooDetected = checkTabooWord(text, tabooWords);
 
-  if (correct) {
-    const userTeam = Object.keys(game.teams).find((teamColor) =>
-      game.teams[teamColor].players.includes(user.id)
-    );
-    await game.pickWord();
-    game.teams[userTeam].score++;
+    if (tabooDetected) {
+      return MessageCheckResultSchema.parse({
+        type: "taboo",
+        correct: false,
+        taboo: true,
+        word: tabooDetected,
+        game,
+      });
+    }
 
-    await saveGame(roomCode, game);
+    return MessageCheckResultSchema.parse({
+      type: "invalid",
+      correct: false,
+      taboo: false,
+      game,
+    });
   }
 
-  // console.log("Answer correct:", correct);
-  return { correct, game };
+  // CASE 3: Others (spectators or outsiders)
+  return MessageCheckResultSchema.parse({
+    type: "invalid",
+    correct: false,
+    taboo: false,
+    game,
+  });
 }
 
 function setTimerForGame(roomCode, game) {
