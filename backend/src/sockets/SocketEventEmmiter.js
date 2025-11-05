@@ -58,7 +58,10 @@ export class SocketEventEmitter {
       }
     }
 
-    await socket.join(roomCode);
+    if (!socket.rooms.has(roomCode)) {
+      socket.currentRoom = roomCode; // used to get roomCode when socket is disconnected
+      await socket.join(roomCode);
+    }
 
     io.to(roomCode).emit(
       "player:joined",
