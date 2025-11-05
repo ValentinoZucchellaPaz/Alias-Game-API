@@ -9,32 +9,28 @@ export default function ChatPanel({ messages, socket, roomCode, inGame }) {
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
-  console.log("User in ChatPanel:", user);
 
   const handleSend = (e) => {
     e.preventDefault();
     if (!text.trim()) return;
     const event = inGame ? "game:message" : "chat:message";
-    console.log("event to emit:", event);
-    console.log("In game status:", inGame);
     socket.emit(event, { code: roomCode, user, text });
     setText("");
   };
 
-  // scroll down to the bottom if autoscroll detected
+  // Auto scroll when new messages arrive
   useEffect(() => {
     if (autoScroll && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, autoScroll]);
 
-  // detect when user makes an autoscroll
+  // Detect user scroll
   const handleScroll = () => {
     const el = messagesContainerRef.current;
     if (!el) return;
 
     const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
-
     if (isAtBottom) {
       setAutoScroll(true);
       setShowScrollButton(false);
@@ -59,14 +55,15 @@ export default function ChatPanel({ messages, socket, roomCode, inGame }) {
         onScroll={handleScroll}
       >
         {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`chat-message ${
-              m.system ? "system-msg" : m.success ? "success-msg" : "user-msg"
-            }`}
-          >
+          <div key={i} className={`chat-message ${m.status}-msg`}>
             <p className="chat-text">
-              {m.system ? m.text : `${m.user.name}: ${m.text}`}
+              {m.user
+                ? `${
+                    m.status == "success"
+                      ? "Correct: " + m.text
+                      : m.user.name + ": " + m.text
+                  }`
+                : m.text}
             </p>
             <span className="chat-timestamp">
               {new Date(m.timestamp).toLocaleTimeString([], {
@@ -80,7 +77,11 @@ export default function ChatPanel({ messages, socket, roomCode, inGame }) {
       </div>
 
       {showScrollButton && (
-        <button className="scroll-to-bottom" onClick={handleScrollToBottom}>
+        <button
+          type="button"
+          className="scroll-to-bottom"
+          onClick={handleScrollToBottom}
+        >
           ↓
         </button>
       )}

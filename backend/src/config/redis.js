@@ -87,7 +87,7 @@ class RedisWrapper {
   }
 
   async del(key) {
-    console.log("borrando key de Redis", key);
+    console.log("borrando key de Redis", this._key(key));
     await this.init();
     await this.client.del(this._key(key));
   }

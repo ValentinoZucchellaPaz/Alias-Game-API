@@ -22,9 +22,8 @@
   position: relative;
   margin-bottom: 5px;
   padding: 6px 8px;
-  border-bottom: 1px solid #2a2a2a;
-  transition: background-color 0.2s ease;
   border-radius: 4px;
+  transition: background-color 0.2s ease;
 }
 
 .chat-message:hover {
@@ -34,7 +33,6 @@
 /* Texto principal */
 .chat-text {
   margin: 0;
-  color: #ddd;
   word-wrap: break-word;
 }
 
@@ -46,35 +44,66 @@
   color: #777;
 }
 
-/* === MENSAJES DE USUARIO === */
-.user-msg .chat-text {
-  color: #ddd;
-}
+/* === MENSAJES SEGÚN STATUS === */
 
-/* === MENSAJES DEL SISTEMA === */
+/* Mensajes del sistema */
 .system-msg {
   color: #c8a96f;
   font-style: italic;
   border: 1px solid #3a3a3a;
-  border: 1px solid #3a3a3a;
   background: rgba(255, 215, 128, 0.04);
-  border-radius: 4px;
-  margin-bottom: 5px;
   padding: 6px 8px;
 }
 
+/* Mensajes de éxito */
 .success-msg {
   color: #7ed957;
   font-style: italic;
   border: 1px solid #3a3a3a;
   background: rgba(126, 217, 87, 0.04);
-  border-radius: 4px;
-  margin-bottom: 5px;
   padding: 6px 8px;
 }
 
+/* Mensajes de error */
+.error-msg {
+  color: #ff6b6b;
+  font-weight: bold;
+  border: 1px solid #662222;
+  background: rgba(255, 107, 107, 0.08);
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+/* Mensajes informativos / chat normal */
+.chat-msg {
+  color: #ddd;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.info-msg {
+  color: #e6e6e6;
+  font-style: italic;
+  border: 1px solid #3a3a3a;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 8px;
+}
+
+/* Timestamp colores según status */
 .system-msg .chat-timestamp {
   color: #9b8759;
+}
+
+.success-msg .chat-timestamp {
+  color: #5c8c3a;
+}
+
+.error-msg .chat-timestamp {
+  color: #aa3333;
+}
+
+.info-msg .chat-timestamp {
+  color: #777;
 }
 
 /* === ÁREA DE INPUT === */

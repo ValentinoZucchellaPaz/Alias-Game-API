@@ -55,122 +55,95 @@ export default function RoomPage() {
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    const handlePlayerJoined = ({ userName, roomCode: code }) => {
-      if (code !== roomCode) return;
-      setMessages((prev) => [
-        ...prev,
-        {
-          system: true,
-          text: `${userName} joined`,
-          timestamp: new Date().toISOString(),
-        },
-      ]);
+    const handleSocketEvent = ({ type, status, data, message, timestamp }) => {
+      switch (type) {
+        case "player:joined":
+        case "player:left":
+        case "room:close":
+          setMessages((prev) => [
+            ...prev,
+            { text: message, status, timestamp },
+          ]);
+          break;
+
+        case "chat:message":
+          setMessages((prev) => [
+            ...prev,
+            {
+              user: data.user,
+              text: data.text,
+              type: data.type,
+              status,
+              timestamp,
+            },
+          ]);
+          break;
+
+        case "team-state":
+          setTeams({
+            red: data.teams?.red || [],
+            blue: data.teams?.blue || [],
+          });
+          break;
+
+        case "game:started":
+        case "game:turn-updated":
+          setGameData(data.game);
+          setRoomState("in-game");
+          setMessages((prev) => [
+            ...prev,
+            { text: message, status, timestamp },
+          ]);
+          break;
+
+        case "game:correct-answer":
+          setGameData(data.game);
+          setMessages((prev) => [
+            ...prev,
+            { user: data.user, text: message, status, timestamp },
+          ]);
+          break;
+
+        case "game:finished":
+          setGameData((prev) => ({ ...prev, results: data.results }));
+          setRoomState("lobby");
+          setMessages((prev) => [
+            ...prev,
+            { text: message, status, timestamp },
+          ]);
+          break;
+
+        case "game:taboo-word":
+          setError(message);
+          break;
+
+        case "room:updated":
+          setRoomData((prev) => ({ ...prev, ...data.roomInfo }));
+          break;
+
+        default:
+          console.warn("Unhandled socket event:", type, data);
+      }
     };
 
-    const handlePlayerLeft = ({ userName, roomCode: code }) => {
-      if (code !== roomCode) return;
-      setMessages((prev) => [
-        ...prev,
-        {
-          system: true,
-          text: `${userName} left`,
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-    };
+    // registrar todos los eventos con un listener genérico
+    const eventNames = [
+      "player:joined",
+      "player:left",
+      "chat:message",
+      "team-state",
+      "game:started",
+      "game:correct-answer",
+      "game:turn-updated",
+      "game:finished",
+      "game:taboo-word",
+      "room:updated",
+    ];
 
-    const handleChatMessage = ({ user, text, timestamp }) => {
-      setMessages((prev) => [...prev, { user, text, timestamp }]);
-    };
-
-    const handleCorrectAnswer = ({ user, text, timestamp, game }) => {
-      setGameData(game);
-      setMessages((prev) => [
-        ...prev,
-        {
-          user,
-          text: `✅ Correct answer! ${user.name} guessed: ${text}`,
-          timestamp,
-          success: true,
-        },
-      ]);
-    };
-
-    const handleTeamState = (teams) => {
-      setTeams({
-        red: teams.red || [],
-        blue: teams.blue || [],
-      });
-    };
-
-    const handleGameStarted = ({ game }) => {
-      setGameData(game);
-      setRoomState("in-game");
-      setMessages((prev) => [
-        ...prev,
-        {
-          system: true,
-          text: "🎮 Game started!",
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-    };
-
-    const handleTurnUpdated = ({ game }) => {
-      setGameData(game);
-      setMessages((prev) => [
-        ...prev,
-        {
-          system: true,
-          text: `🔁 New turn: ${game.currentTeam} - describer: ${game.currentDescriber}`,
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-    };
-
-    const handleGameFinished = (results) => {
-      setGameData((prev) => ({ ...prev, results }));
-      setRoomState("lobby");
-      setMessages((prev) => [
-        ...prev,
-        {
-          system: true,
-          text: "🏁 Game over!",
-          timestamp: new Date().toISOString(),
-        },
-      ]);
-    };
-
-    const handleTabooWord = ({ user, text, word, message }) => {
-      setError(message);
-    };
-
-    const handleRoomUpdate = ({ globalScore, games }) => {
-      setRoomData((prev) => ({ ...prev, globalScore, games }));
-    };
-
-    socket.on("player:joined", handlePlayerJoined);
-    socket.on("player:left", handlePlayerLeft);
-    socket.on("chat:message", handleChatMessage);
-    socket.on("team-state", handleTeamState);
-    socket.on("game:started", handleGameStarted);
-    socket.on("game:correct-answer", handleCorrectAnswer);
-    socket.on("game:turn-updated", handleTurnUpdated);
-    socket.on("game:finished", handleGameFinished);
-    socket.on("game:taboo-word", handleTabooWord);
-    socket.on("room:updated", handleRoomUpdate);
+    eventNames.forEach((event) => socket.on(event, handleSocketEvent));
 
     return () => {
-      socket.off("player:joined", handlePlayerJoined);
-      socket.off("player:left", handlePlayerLeft);
-      socket.off("chat:message", handleChatMessage);
-      socket.off("team-state", handleTeamState);
-      socket.off("game:started", handleGameStarted);
-      socket.off("game:correct-answer", handleCorrectAnswer);
-      socket.off("game:turn-updated", handleTurnUpdated);
-      socket.off("game:finished", handleGameFinished);
-      socket.off("game:taboo-word", handleTabooWord);
-      socket.off("room:updated", handleRoomUpdate);
+      eventNames.forEach((event) => socket.off(event, handleSocketEvent));
     };
   }, [socket, isConnected, roomCode]);
 
@@ -266,7 +239,9 @@ export default function RoomPage() {
 
 function GlobalResults({ red, blue, roomState }) {
   return (
-    (roomState === "lobby" ?? red ?? blue) && (
+    roomState === "lobby" &&
+    !isNaN(red) &&
+    !isNaN(blue) && (
       <div className="results-panel">
         <h2>🏁 Global Results</h2>
         <p>Red Team: {red} pts</p>
@@ -279,7 +254,9 @@ function GlobalResults({ red, blue, roomState }) {
 // componente que muestra resultados finales
 function GameResults({ red, blue, roomState }) {
   return (
-    (roomState === "lobby" ?? red ?? blue) && (
+    roomState === "lobby" &&
+    !isNaN(red) &&
+    !isNaN(blue) && (
       <div className="results-panel">
         <h2>🏁 Game Results</h2>
         <p>Red Team: {red} pts</p>

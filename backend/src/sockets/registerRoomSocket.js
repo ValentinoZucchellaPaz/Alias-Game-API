@@ -41,19 +41,30 @@ export default function registerRoomSocket(io) {
     });
 
     socket.on("game:message", async ({ code, user, text }) => {
-      if (!text) return;
+      if (!text?.trim()) return;
 
-      const { correct, game, isTaboo, word } = await gameService.checkForAnswer(user, text, code);
+      try {
+        const result = await gameService.checkForAnswer(user, text, code);
 
-      if (correct) {
-        console.log("el intento es correcto");
-        SocketEventEmitter.gameCorrectAnswer(code, user, text, game);
-      } else if (isTaboo && word) {
-        console.log("taboo word incoming");
-        SocketEventEmitter.tabooWord(user, text, word);
-      } else {
-        console.log("el intento es incorrecto", isTaboo, word);
-        SocketEventEmitter.sendMessage({ code, user, text });
+        switch (result.type) {
+          case "answer":
+            if (result.correct) {
+              SocketEventEmitter.gameCorrectAnswer(code, user, text, result.game);
+            } else {
+              SocketEventEmitter.sendMessage({ code, user, text });
+            }
+            break;
+
+          case "taboo":
+            SocketEventEmitter.tabooWord(user, text, result.word);
+            break;
+
+          default:
+            SocketEventEmitter.sendMessage({ code, user, text });
+            break;
+        }
+      } catch (err) {
+        console.error("Error processing game message: ", err);
       }
     });
 
@@ -61,7 +72,7 @@ export default function registerRoomSocket(io) {
       try {
         await roomService.updateTeams(roomCode, team, userId);
       } catch (error) {
-        console.log("error cambiando de equipo", error);
+        console.log("error changing team: ", error);
       }
     });
 

@@ -81,7 +81,9 @@ export class Game {
     if (!this.words.unused.length) {
       this.words.unused = await gameRepository.getWords(this.words.used.map((w) => w.word));
     }
-    this.wordToGuess = this.words.unused[Math.floor(Math.random() * this.words.unused.length)];
+    const index = Math.floor(Math.random() * this.words.unused.length);
+    this.wordToGuess = this.words.unused.splice(index, 1)[0];
+    this.words.used.push(this.wordToGuess);
   }
 
   checkAnswer(text) {
