@@ -1,0 +1,176 @@
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+/* === LISTA DE MENSAJES === */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #1e1e1e;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  margin-bottom: 8px;
+  scroll-behavior: smooth;
+}
+
+/* === CADA MENSAJE === */
+.chat-message {
+  position: relative;
+  margin-bottom: 5px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.chat-message:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Texto principal */
+.chat-text {
+  margin: 0;
+  word-wrap: break-word;
+}
+
+/* Timestamp (hora) */
+.chat-timestamp {
+  display: block;
+  text-align: right;
+  font-size: 0.75rem;
+  color: #777;
+}
+
+/* === MENSAJES SEGÚN STATUS === */
+
+/* Mensajes del sistema */
+.system-msg {
+  color: #c8a96f;
+  font-style: italic;
+  border: 1px solid #3a3a3a;
+  background: rgba(255, 215, 128, 0.04);
+  padding: 6px 8px;
+}
+
+/* Mensajes de éxito */
+.success-msg {
+  color: #7ed957;
+  font-style: italic;
+  border: 1px solid #3a3a3a;
+  background: rgba(126, 217, 87, 0.04);
+  padding: 6px 8px;
+}
+
+/* Mensajes de error */
+.error-msg {
+  color: #ff6b6b;
+  font-weight: bold;
+  border: 1px solid #662222;
+  background: rgba(255, 107, 107, 0.08);
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+/* Mensajes informativos / chat normal */
+.chat-msg {
+  color: #ddd;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.info-msg {
+  color: #e6e6e6;
+  font-style: italic;
+  border: 1px solid #3a3a3a;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 8px;
+}
+
+/* Timestamp colores según status */
+.system-msg .chat-timestamp {
+  color: #9b8759;
+}
+
+.success-msg .chat-timestamp {
+  color: #5c8c3a;
+}
+
+.error-msg .chat-timestamp {
+  color: #aa3333;
+}
+
+.info-msg .chat-timestamp {
+  color: #777;
+}
+
+/* === ÁREA DE INPUT === */
+.chat-input-area {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input-area input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background-color: #2a2a2a;
+  color: #fff;
+}
+
+.chat-input-area input:focus {
+  outline: none;
+  border-color: #0077cc;
+}
+
+.chat-input-area button {
+  background-color: #0077cc;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.chat-input-area button:hover {
+  background-color: #005fa3;
+}
+
+/* === BOTÓN DE SCROLL ABAJO === */
+.scroll-to-bottom {
+  position: absolute;
+  bottom: 60px;
+  right: 26px;
+  background: #2c2c2c;
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.scroll-to-bottom:hover {
+  background: #1e4ed8;
+  transform: translateY(-1px);
+}
+
+/* === SCROLLBAR PERSONALIZADO (solo WebKit) === */
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

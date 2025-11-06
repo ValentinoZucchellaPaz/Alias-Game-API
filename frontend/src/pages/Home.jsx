@@ -1,0 +1,113 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSocket } from "../context/SocketContext";
+import RoomList from "../components/RoomList";
+import api from "../lib/api";
+import "./css/home.css";
+
+export default function Home() {
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [newRoom, setNewRoom] = useState("");
+  const navigate = useNavigate();
+  const { socket, isConnected } = useSocket();
+
+  const fetchRooms = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("http://localhost:4000/api/rooms", {
+        withCredentials: true,
+      });
+      console.log("rooms", res.data);
+      setRooms(res.data);
+    } catch (err) {
+      setError(err.response.data.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const handleCreateRoom = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post("http://localhost:4000/api/rooms", {
+        withCredentials: true,
+      });
+
+      if (res.status === 201) {
+        navigate(`/room/${res.data.code}`);
+      }
+    } catch (err) {
+      setError(err.response.data.message || err.message);
+    } finally {
+      setNewRoom("");
+    }
+  };
+
+  const handleJoin = async (roomCode) => {
+    try {
+      const res = await api.post(
+        `http://localhost:4000/api/rooms/${roomCode}/join`,
+        {},
+        { withCredentials: true }
+      );
+
+      if (res.status === 200) {
+        navigate(`/room/${roomCode}`);
+      }
+    } catch (err) {
+      setError(err.response.data.message || err.message);
+    }
+  };
+
+  if (!isConnected) {
+    return (
+      <div className="lobby-container">
+        <h2>🔌 Conectando al servidor...</h2>
+      </div>
+    );
+  }
+
+  return (
+    <div className="lobby-container">
+      <h1>🎮 Alias Game Lobby</h1>
+      {error && (
+        <p style={{ color: "red", textAlign: "center" }}>Error: {error}</p>
+      )}
+
+      {/* Crear Room */}
+      <div className="create-room-form">
+        {/* proximamente se ve si las room se crean con settings */}
+        {/* <input
+          type="text"
+          placeholder="New room name"
+          value={newRoom}
+          onChange={(e) => setNewRoom(e.target.value)}
+          className="create-input"
+        /> */}
+        <button
+          type="submit"
+          onClick={handleCreateRoom}
+          className="create-button"
+        >
+          Create Room
+        </button>
+        <button
+          onClick={fetchRooms}
+          disabled={loading}
+          className="refresh-button"
+        >
+          {loading ? "Refreshing..." : "🔄 Refresh Rooms"}
+        </button>
+      </div>
+
+      {/* Lista de rooms */}
+      <RoomList rooms={rooms} onJoin={handleJoin} />
+    </div>
+  );
+}
