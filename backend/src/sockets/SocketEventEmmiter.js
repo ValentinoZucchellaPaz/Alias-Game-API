@@ -187,4 +187,18 @@ export class SocketEventEmitter {
       .to(roomCode)
       .emit("team-state", buildPayload("team-state", "info", { teams }, "Team state updated"));
   }
+
+  static async rateLimitWarning(socket, err) {
+    if (!socket) return;
+
+    socket.emit("rateLimitWarning", buildPayload("rateLimitWarning", "429", err, err.message));
+  }
+
+  static async internalError(socket, err) {
+    if (!socket) return;
+    socket.emit(
+      "errorMessage",
+      buildPayload("internalError", "500", err, "An internal error occurred")
+    );
+  }
 }

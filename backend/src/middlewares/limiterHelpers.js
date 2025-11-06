@@ -1,5 +1,6 @@
 import { RateLimiterRedis } from "rate-limiter-flexible";
 import { RedisClientSingleton } from "../config/redis.js";
+import { RateLimitError } from "../utils/errors.js";
 
 let redisClientPromise = RedisClientSingleton.getInstance();
 
@@ -27,28 +28,13 @@ export async function tryConsumeLimiter(limiter, key) {
   }
 }
 
-export function socketRateLimitMiddleware(
-  targetEvent,
-  limiter,
-  socket,
-  identifier,
-  message = "Too many requests, please slow down."
-) {
+export function socketRateLimitMiddleware(targetEvent, limiter, identifier) {
   return async ([event, data], next) => {
     if (event === targetEvent) {
       const { success, retryMs } = await tryConsumeLimiter(limiter, identifier);
 
       if (!success) {
-        console.log(
-          "Rate limit exceeded for event:",
-          targetEvent,
-          "identifier:",
-          identifier,
-          "retry in ms:",
-          retryMs
-        );
-        socket.emit("rateLimitExceeded", { message });
-        return;
+        return next(new RateLimitError(targetEvent, retryMs));
       }
     }
     next();
@@ -57,19 +43,9 @@ export function socketRateLimitMiddleware(
 
 export function httpRateLimitMiddleware(limiter, identifierFn) {
   return async (req, res, next) => {
-    console.log("httpRateLimitMiddleware called with limiter: ", limiter);
-
     const key = identifierFn ? identifierFn(req) : getHttpIp(req);
 
-    console.log("Rate limiting key:", key);
     const { success, retryMs } = await tryConsumeLimiter(limiter, key);
-
-    console.log(
-      "Rate limiter result for key",
-      key,
-      ":",
-      success ? "allowed" : `blocked, retry in ${retryMs}ms`
-    );
 
     if (!success) {
       return res.status(429).json({

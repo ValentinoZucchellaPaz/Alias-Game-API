@@ -1,5 +1,5 @@
 import { socketCache } from "../../config/redis.js";
-import { AppError } from "../../utils/errors.js";
+import { AppError, RateLimitError } from "../../utils/errors.js";
 import jwt from "../../utils/jwt.js";
 import { socketConnectionLimiter } from "./limiters/rateLimiters.js";
 import { getSocketIp, tryConsumeLimiter } from "../limiterHelpers.js";
@@ -15,15 +15,9 @@ export const socketConnectionRateLimitMiddleware = async (socket, next) => {
   const { success, retryMs } = await tryConsumeLimiter(socketConnectionLimiter, ip);
 
   if (!success) {
-    console.log(
-      "Rate limit exceeded for event:",
-      "socket-connection",
-      "identifier:",
-      ip,
-      "retry in ms:",
-      retryMs
+    return next(
+      new RateLimitError("connection", retryMs, "Too many connection attempts from this IP")
     );
-    return next(new Error("Too many connection attempts. Please wait a few seconds."));
   }
 
   next();

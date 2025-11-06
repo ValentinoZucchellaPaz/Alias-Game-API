@@ -11,6 +11,7 @@ import {
   socketAuthMiddleware,
   socketConnectionRateLimitMiddleware,
 } from "../middlewares/socketMiddlewares/connection.js";
+import { socketErrorHandler } from "../middlewares/socketErrorHandler.js";
 
 // src/sockets/registerRoomSocket.js
 /**
@@ -107,5 +108,7 @@ export default function registerRoomSocket(io) {
         console.error(`Error handling disconnect for userId=${socket.userId}`, err);
       }
     });
+
+    socket.on("error", (err) => socketErrorHandler(socket, err));
   });
 }
