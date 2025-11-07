@@ -120,7 +120,7 @@ export class SocketEventEmitter {
       .emit("game:started", buildPayload("game:started", "system", { game }, "Game has started"));
   }
 
-  static gameCorrectAnswer(roomCode, user, text, game) {
+  static gameCorrectAnswer(roomCode, user, text, game, wordGuessed) {
     this.getIO()
       .to(roomCode)
       .emit(
@@ -129,7 +129,7 @@ export class SocketEventEmitter {
           "game:correct-answer",
           "success",
           { user, text, game },
-          `${user.name} guessed the word correctly!`
+          `${user.name} guessed the word correctly! The word was: ${wordGuessed}`
         )
       );
   }

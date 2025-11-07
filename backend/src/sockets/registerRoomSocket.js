@@ -50,7 +50,7 @@ export default function registerRoomSocket(io) {
         switch (result.type) {
           case "answer":
             if (result.correct) {
-              SocketEventEmitter.gameCorrectAnswer(code, user, text, result.game);
+              SocketEventEmitter.gameCorrectAnswer(code, user, text, result.game, text);
             } else {
               SocketEventEmitter.sendMessage({ code, user, text });
             }
