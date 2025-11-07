@@ -157,6 +157,16 @@ export class SocketEventEmitter {
     );
   }
 
+  static similarWord(code, user, text, similarWord) {
+    console.log("esto es la similar word que llega al emmiter: ", similarWord);
+    this.getIO()
+      .to(code)
+      .emit(
+        "game:similar-word",
+        buildPayload("game:similar-word", "chat", { user, similarWord }, text)
+      );
+  }
+
   static gameFinished(roomCode, results) {
     this.getIO()
       .to(roomCode)

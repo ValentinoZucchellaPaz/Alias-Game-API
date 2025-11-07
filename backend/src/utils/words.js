@@ -9,6 +9,17 @@ export function checkTabooWord(rawText, tabooWords) {
   return null;
 }
 
+export function checkSimilarWords(rawText, similarWordsArray) {
+  const normalizedText = cleanText(rawText);
+  for (const similarWord of similarWordsArray) {
+    const cleanedSimilar = cleanText(similarWord);
+    if (normalizedText.includes(cleanedSimilar)) {
+      return similarWord; // return the matched similar word
+    }
+  }
+  return null;
+}
+
 export function normalize(str) {
   if (!str) return "";
   return str

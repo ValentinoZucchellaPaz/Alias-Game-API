@@ -138,6 +138,20 @@ export default function RoomPage() {
           setError(message);
           break;
 
+        case "game:similar-word":
+          console.log(data.similarWord);
+          setMessages((prev) => [
+            ...prev,
+            {
+              user: data.user,
+              text: message,
+              status,
+              timestamp,
+              similarWord: data.similarWord,
+            },
+          ]);
+          break;
+
         case "room:updated":
           setRoomData((prev) => ({ ...prev, ...data.roomInfo }));
           break;
@@ -166,6 +180,7 @@ export default function RoomPage() {
       "game:finished",
       "game:taboo-word",
       "game:new-word",
+      "game:similar-word",
       "room:updated",
       "rateLimitWarning",
     ];

@@ -60,6 +60,10 @@ export default function registerRoomSocket(io) {
             SocketEventEmitter.tabooWord(user, text, result.word);
             break;
 
+          case "similar":
+            SocketEventEmitter.similarWord(code, user, text, result?.similarWord);
+            break;
+
           default:
             SocketEventEmitter.sendMessage({ code, user, text });
             break;

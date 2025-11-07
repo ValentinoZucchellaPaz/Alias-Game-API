@@ -57,13 +57,14 @@ export default function ChatPanel({ messages, socket, roomCode, inGame }) {
         {messages.map((m, i) => (
           <div key={i} className={`chat-message ${m.status}-msg`}>
             <p className="chat-text">
-              {m.user
-                ? `${
-                    m.status == "success"
-                      ? "Correct: " + m.text
-                      : m.user.name + ": " + m.text
-                  }`
-                : m.text}
+              {m.user &&
+                `${m.status == "success" ? "Correct: " : m.user.name + ": "}`}
+              {m.text}
+              {m.similarWord && (
+                <span className="similar-badge">
+                  similar word - {m.similarWord.type}
+                </span>
+              )}
             </p>
             <span className="chat-timestamp">
               {new Date(m.timestamp).toLocaleTimeString([], {

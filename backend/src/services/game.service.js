@@ -5,7 +5,7 @@ import gameRepository from "../repositories/game.repository.js";
 import { MessageCheckResultSchema } from "../schemas/word.schema.js";
 import { SocketEventEmitter } from "../sockets/SocketEventEmmiter.js";
 import { AppError } from "../utils/errors.js";
-import { checkTabooWord, cleanText } from "../utils/words.js";
+import { checkSimilarWords, checkTabooWord, cleanText } from "../utils/words.js";
 import roomService from "./room.service.js";
 
 async function createGame(roomCode) {
@@ -102,7 +102,21 @@ async function checkForAnswer(userId, text, roomCode) {
       });
     }
 
-    // Incorrect guess
+    // Incorrect guess -> check similar words
+    const similarW = checkSimilarWords(
+      text,
+      game.wordToGuess.similarWords?.map((w) => w.similarWord)
+    );
+    if (similarW) {
+      return MessageCheckResultSchema.parse({
+        type: "similar",
+        correct: false,
+        taboo: false,
+        game,
+        similarWord: game.wordToGuess.similarWords.find((w) => w.similarWord == similarW),
+      });
+    }
+
     return MessageCheckResultSchema.parse({
       type: "answer",
       correct: false,
