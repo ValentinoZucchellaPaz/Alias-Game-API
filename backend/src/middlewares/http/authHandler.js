@@ -1,5 +1,5 @@
-import { AuthError } from "../utils/errors.js";
-import jwt from "../utils/jwt.js";
+import { AuthError } from "../../utils/errors.js";
+import jwt from "../../utils/jwt.js";
 
 export async function getSession(req, res, next) {
   try {

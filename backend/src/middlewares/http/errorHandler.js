@@ -1,5 +1,5 @@
 import { ZodError } from "zod";
-import { AppError, ValidationError } from "../utils/errors.js";
+import { AppError, ValidationError } from "../../utils/errors.js";
 
 export function errorHandler(err, req, res, _next) {
   console.error("desde error handler", err); // debug errors

@@ -5,6 +5,16 @@ export class AppError extends Error {
     this.type = type;
     Error.captureStackTrace(this, this.constructor);
   }
+
+  serialize() {
+    const base = {
+      name: this.name,
+      message: this.message,
+      stack: this.stack,
+    };
+
+    return Object.assign(base, { ...this });
+  }
 }
 
 export class AuthError extends AppError {
@@ -29,5 +39,13 @@ export class ValidationError extends AppError {
 export class ConflictError extends AppError {
   constructor(message = "Conflict") {
     super(message, 409, "conflict");
+  }
+}
+
+export class RateLimitError extends AppError {
+  constructor(event, msBeforeNext, message) {
+    super(message || `Rate limit exceeded for event: ${event}`, 429, "rate_limit");
+    this.event = event;
+    this.retryAfter = msBeforeNext;
   }
 }

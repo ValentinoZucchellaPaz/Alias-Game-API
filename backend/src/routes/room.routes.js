@@ -8,9 +8,12 @@ import {
   startGame,
   updateRoomStatus,
 } from "../controllers/room.controller.js";
-import { extractTokens, getSession } from "../middlewares/authHandler.js";
+import { extractTokens, getSession } from "../middlewares/http/authHandler.js";
+import { gameLimiterMiddleware } from "../middlewares/http/limiters/rateLimiters.js";
 
 const router = Router();
+
+router.use(gameLimiterMiddleware);
 
 // Middlewares de auth ya están hechos
 router.post("/", extractTokens, getSession, createRoom);

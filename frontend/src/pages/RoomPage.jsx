@@ -142,6 +142,13 @@ export default function RoomPage() {
           setRoomData((prev) => ({ ...prev, ...data.roomInfo }));
           break;
 
+        case "rateLimitWarning":
+          if (data.type === "rate_limit") {
+            setError(data.message || "Rate limit exceeded");
+          }
+
+          break;
+
         default:
           console.warn("Unhandled socket event:", type, data);
       }
@@ -160,9 +167,15 @@ export default function RoomPage() {
       "game:taboo-word",
       "game:new-word",
       "room:updated",
+      "rateLimitWarning",
     ];
 
     eventNames.forEach((event) => socket.on(event, handleSocketEvent));
+
+    socket.on("error", (err) => {
+      console.error("Socket error event:", err);
+      alert("Socket error");
+    });
 
     return () => {
       eventNames.forEach((event) => socket.off(event, handleSocketEvent));
@@ -206,6 +219,7 @@ export default function RoomPage() {
     socket.emit("game:skip-word", { userId: user.id, roomCode });
   };
 
+  console.log("Error state:", error);
   // Render
   if (loading)
     return (
