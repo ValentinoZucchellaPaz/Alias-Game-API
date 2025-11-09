@@ -1,5 +1,6 @@
 import { roomCache } from "../config/redis.js";
 import { Room } from "../models/sequelize/index.js";
+import timeManager from "../models/TimerManager.js";
 import { SocketEventEmitter } from "../sockets/SocketEventEmmiter.js";
 import { AppError, ConflictError } from "../utils/errors.js";
 import { v4 as uuidv4 } from "uuid";
@@ -129,6 +130,8 @@ async function leaveRoom({ roomCode, userId, userName }) {
   player.active = false;
 
   if (room.players.every((p) => p.active === false)) {
+    timeManager.clearTimer(roomCode);
+
     room.status = "finished";
     await Room.update(
       {
