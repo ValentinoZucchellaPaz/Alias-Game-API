@@ -11,9 +11,9 @@ import roomRoutes from "./routes/room.routes.js";
 // dotenv.config();
 const app = express();
 
-// docs de swagger (http) + asyncapi (sockets)
+// docs (swagger)
 import swaggerUi from "swagger-ui-express";
-import swaggerDocument from "../../docs/docs.json" with { type: "json" };
+import swaggerDocument from "../../docs-site/swagger.json" with { type: "json" };
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // middlewares
