@@ -11,10 +11,11 @@ import roomRoutes from "./routes/room.routes.js";
 // dotenv.config();
 const app = express();
 
-// docs de swagger
+// docs de swagger (http) + asyncapi (sockets)
 import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "../../docs/docs.json" with { type: "json" };
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use("/docs/http", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use("/docs/sockets", express.static("../../docs/sockets.html"));
 
 // middlewares
 dotenv.config({ quiet: true });

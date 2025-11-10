@@ -17,7 +17,7 @@ export const joinRoom = async (req, res) => {
     userId: req.user.id,
     userName: req.user.name,
   });
-  res.json(room);
+  res.status(200).json(room);
 };
 
 export const leaveRoom = async (req, res) => {
@@ -27,25 +27,26 @@ export const leaveRoom = async (req, res) => {
     userId: req.user.id,
     userName: req.user.name,
   });
-  res.json(room);
+  res.status(200).json(room);
 };
 
+// es realmente necesario?
 export const updateRoomStatus = async (req, res) => {
   const { code } = req.params;
   const { status } = req.body;
   const room = await roomService.updateRoomStatus({ roomCode: code, status });
-  res.json(room);
+  res.status(200).json(room);
 };
 
 export const getRoomByCode = async (req, res) => {
   const { code } = req.params;
   const room = await roomService.getRoom(code);
-  res.json(room);
+  res.status(200).json(room);
 };
 
 export const getRooms = async (req, res) => {
   const rooms = await roomService.getRooms();
-  res.json(rooms);
+  res.status(200).json(rooms);
 };
 
 export const startGame = async (req, res) => {
@@ -56,5 +57,5 @@ export const startGame = async (req, res) => {
 
   const { roomCode, game } = await gameService.createGame(code);
   SocketEventEmitter.gameStarted(code, game);
-  res.json(game);
+  res.status(201).json(game);
 };
