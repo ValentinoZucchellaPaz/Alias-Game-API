@@ -148,20 +148,6 @@
           }
         }
       },
-      "SocketPayload": {
-        "type": "object",
-        "properties": {
-          "type": { "type": "string", "example": "game:message" },
-          "status": {
-            "type": "string",
-            "enum": ["success", "error", "info", "system"],
-            "example": "success"
-          },
-          "data": { "type": "object" },
-          "message": { "type": "string" },
-          "timestamp": { "type": "string", "format": "date-time" }
-        }
-      },
       "UserRegisterRequestDTO": {
         "type": "object",
         "properties": {
@@ -181,6 +167,27 @@
             "type": "string",
             "minLength": 6
           }
+        }
+      },
+      "PublicUser": {
+        "type": "object",
+        "properties": {
+          "name": "string",
+          "id": "string",
+          "role": { "type": "string", "example": "player" }
+        }
+      },
+      "SocketPayload": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "example": "game:message" },
+          "status": {
+            "type": "string",
+            "enum": ["success", "error", "info", "system"]
+          },
+          "data": { "type": "object", "additionalProperties": true },
+          "message": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
         }
       }
     }
@@ -257,8 +264,7 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "accessToken": { "type": "string" },
-                    "refreshToken": { "type": "string" }
+                    "accessToken": { "type": "string" }
                   }
                 }
               }
@@ -388,7 +394,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "Game started",
             "content": {
               "application/json": {
@@ -423,44 +429,550 @@
           }
         }
       }
-    }
-  },
-  "x-websocket-events": {
-    "connection": "Authenticated WebSocket connection using JWT.",
-    "events": [
-      {
-        "name": "chat:message",
-        "direction": "client → server",
-        "payload": { "code": "string", "user": "User", "text": "string" },
-        "response": { "$ref": "#/components/schemas/SocketPayload" }
-      },
-      {
-        "name": "game:message",
-        "direction": "client → server",
-        "payload": { "code": "string", "user": "User", "text": "string" },
-        "response": { "$ref": "#/components/schemas/SocketPayload" }
-      },
-      {
-        "name": "game:skip-word",
-        "direction": "client → server",
-        "payload": { "userId": "string", "roomCode": "string" },
-        "response": { "$ref": "#/components/schemas/SocketPayload" }
-      },
-      {
-        "name": "join-team",
-        "direction": "client → server",
-        "payload": {
-          "roomCode": "string",
-          "team": "string",
-          "userId": "string"
-        },
-        "response": { "$ref": "#/components/schemas/SocketPayload" }
-      },
-      {
-        "name": "player:left",
-        "direction": "server → client",
-        "payload": { "$ref": "#/components/schemas/SocketPayload" }
+    },
+    "/client/player:joined": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Player joined room",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "player:joined",
+                  "status": "info",
+                  "data": {
+                    "roomCode": "ABCD",
+                    "userId": "123",
+                    "userName": "Alice"
+                  },
+                  "message": "Alice joined the room",
+                  "timestamp": "2025-11-10T12:00:00Z"
+                }
+              }
+            }
+          }
+        }
       }
-    ]
+    },
+    "/client/player:left": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Player left room",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "player:left",
+                  "status": "info",
+                  "data": {
+                    "roomCode": "ABCD",
+                    "userId": "123",
+                    "userName": "Alice"
+                  },
+                  "message": "Alice left the room",
+                  "timestamp": "2025-11-10T12:05:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/chat:message": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Chat message broadcast",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "chat:message",
+                  "status": "success",
+                  "data": {
+                    "user": { "id": "123", "name": "Alice" },
+                    "text": "Hello!"
+                  },
+                  "message": "Alice: Hello!",
+                  "timestamp": "2025-11-10T12:10:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/team-state": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Current state of teams",
+        "description": "Event payload with updated team states, server gives feedback to all players in a room when a player switches teams",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "team-state",
+                  "status": "info",
+                  "data": { "teams": { "red": ["Alice"], "blue": ["Bob"] } },
+                  "message": "Team state updated",
+                  "timestamp": "2025-11-10T12:15:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/game:started": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Game started",
+        "responses": {
+          "200": {
+            "description": "Event payload with game data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "game:started",
+                  "status": "system",
+                  "data": {
+                    "game": { "roomCode": "ABCD", "state": "playing" }
+                  },
+                  "message": "Game has started",
+                  "timestamp": "2025-11-10T12:20:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/game:finished": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Game finished",
+        "responses": {
+          "200": {
+            "description": "Event payload with game results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "game:finished",
+                  "status": "system",
+                  "data": { "results": { "red": 10, "blue": 8 } },
+                  "message": "Game finished",
+                  "timestamp": "2025-11-10T12:35:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/game:turn-updated": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Game turn updated",
+        "responses": {
+          "200": {
+            "description": "Event payload with the updated game state when the turn changes",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "game:turn-updated",
+                  "status": "info",
+                  "data": { "game": { "turnsPlayed": 3 } },
+                  "message": "Turn updated",
+                  "timestamp": "2025-11-10T12:30:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/game:correct-answer": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Correct answer notification",
+        "responses": {
+          "200": {
+            "description": "Event payload when a player guesses correctly",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "game:correct-answer",
+                  "status": "success",
+                  "data": {
+                    "user": { "id": "123", "name": "Alice" },
+                    "text": "Cat",
+                    "game": {
+                      "wordToGuess": {
+                        "word": "new word",
+                        "similarWords": [
+                          {
+                            "similarWord": "something similar",
+                            "similarity": 0.8,
+                            "type": "adjective"
+                          }
+                        ],
+                        "tabooWords": ["not this word"]
+                      }
+                    }
+                  },
+                  "message": "Alice guessed the word correctly! The word was: Cat",
+                  "timestamp": "2025-11-10T12:25:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/game:taboo-word": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Taboo word warning",
+        "responses": {
+          "200": {
+            "description": "Event payload when a player uses a taboo word",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "game:taboo-word",
+                  "status": "error",
+                  "data": {
+                    "user": { "id": "123" },
+                    "text": "example",
+                    "word": "tabooWord"
+                  },
+                  "message": "The word 'tabooWord' is taboo — you can't use it.",
+                  "timestamp": "2025-11-10T12:40:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/game:new-word": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: New word event",
+        "responses": {
+          "200": {
+            "description": "Event payload with a new word or error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "game:new-word",
+                  "status": "info",
+                  "data": {
+                    "game": {
+                      "wordToGuess": {
+                        "word": "Dog",
+                        "similarWords": [
+                          {
+                            "similarWord": "K9",
+                            "similarity": 0.8,
+                            "type": "adjective"
+                          }
+                        ],
+                        "tabooWords": ["Doggy"]
+                      }
+                    }
+                  },
+                  "message": "New word sent",
+                  "timestamp": "2025-11-10T12:45:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/game:similar-word": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Similar word notification",
+        "responses": {
+          "200": {
+            "description": "Event payload when a similar word is detected",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "game:similar-word",
+                  "status": "chat",
+                  "data": {
+                    "user": { "id": "123" },
+                    "similarWords": {
+                      "similarWord": "this was close",
+                      "similarity": 0.8,
+                      "type": "adjective"
+                    }
+                  },
+                  "message": "Detected a similar word",
+                  "timestamp": "2025-11-10T12:50:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/rateLimitWarning": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Rate limit warning",
+        "responses": {
+          "200": {
+            "description": "Event payload when the client exceeds rate limits",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "rateLimitWarning",
+                  "status": "error",
+                  "data": { "limit": 10, "current": 12 },
+                  "message": "You have exceeded the allowed rate",
+                  "timestamp": "2025-11-10T13:00:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/room:updated": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Room updated",
+        "responses": {
+          "200": {
+            "description": "Event payload with updated room info",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "room:updated",
+                  "status": "info",
+                  "data": { "roomInfo": { "currentPlayers": 4 } },
+                  "message": "Room state updated",
+                  "timestamp": "2025-11-10T12:55:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/room:close": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Room closed",
+        "responses": {
+          "200": {
+            "description": "Event payload when a room is closed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "room:close",
+                  "status": "system",
+                  "data": {
+                    "roomCode": "ABCD",
+                    "globalScore": { "red": 10, "blue": 8 }
+                  },
+                  "message": "Room closed by host",
+                  "timestamp": "2025-11-10T13:05:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/error:message": {
+      "get": {
+        "tags": ["Server → Client Events"],
+        "summary": "Server → Client: Internal error message",
+        "responses": {
+          "200": {
+            "description": "Event payload for internal errors",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" },
+                "example": {
+                  "type": "error:message",
+                  "status": "error",
+                  "data": {
+                    "error": { "code": 500, "message": "Internal server error" }
+                  },
+                  "message": "An internal error occurred",
+                  "timestamp": "2025-11-10T13:10:00Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/server/chat:message": {
+      "post": {
+        "tags": ["Client → Server Events"],
+        "summary": "Client → Server: Send a chat message",
+        "description": "Client sends a message to the server and the server broadcasts it to all players in the room",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": { "type": "string" },
+                  "user": {
+                    "id": "string",
+                    "name": "string",
+                    "role": "player"
+                  },
+                  "text": { "type": "string" }
+                }
+              },
+              "example": {
+                "code": "ABCD",
+                "user": { "id": "123", "name": "Alice" },
+                "text": "Hello!"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payload result for the event",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/server/game:message": {
+      "post": {
+        "tags": ["Client → Server Events"],
+        "summary": "Client → Server: Send in-game word guess",
+        "description": "When the game is active should use this to broadcast messages, depending on the result it broadcasts `game:correct-answer`, `game:taboo-word`, `game:similar-word` or `chat:message` as a fallback.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": { "type": "string" },
+                  "user": { "type": "object", "additionalProperties": true },
+                  "text": { "type": "string" }
+                }
+              },
+              "example": {
+                "code": "ABCD",
+                "user": { "id": "123", "name": "Alice" },
+                "text": "Cat"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payload result for the event",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/server/game:skip-word": {
+      "post": {
+        "tags": ["Client → Server Events"],
+        "summary": "Client → Server: Request to skip current word",
+        "description": "Client asks for a new word and server emits `game:new-word`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": { "type": "string" },
+                  "roomCode": { "type": "string" }
+                }
+              },
+              "example": { "userId": "123", "roomCode": "ABCD" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payload result for the event",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/server/join-team": {
+      "post": {
+        "tags": ["Client → Server Events"],
+        "summary": "Client → Server: Join a team",
+        "description": "Client asks to join to that team and server emits `team-state`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "roomCode": { "type": "string" },
+                  "team": { "type": "string", "enum": ["red", "blue"] },
+                  "userId": { "type": "string" }
+                }
+              },
+              "example": { "roomCode": "ABCD", "team": "red", "userId": "123" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payload result for the event",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocketPayload" }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

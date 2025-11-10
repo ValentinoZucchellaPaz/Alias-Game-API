@@ -14,8 +14,7 @@ const app = express();
 // docs de swagger (http) + asyncapi (sockets)
 import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "../../docs/docs.json" with { type: "json" };
-app.use("/docs/http", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-app.use("/docs/sockets", express.static("../../docs/sockets.html"));
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // middlewares
 dotenv.config({ quiet: true });
