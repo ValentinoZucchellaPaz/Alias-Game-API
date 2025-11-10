@@ -13,7 +13,7 @@ const app = express();
 
 // docs (swagger)
 import swaggerUi from "swagger-ui-express";
-import swaggerDocument from "../../docs-site/swagger.json" with { type: "json" };
+import swaggerDocument from "../../docs/swagger.json" with { type: "json" };
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // middlewares
