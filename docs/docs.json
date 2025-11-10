@@ -1,0 +1,466 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Alias Game API",
+    "version": "1.0.0",
+    "description": "Backend API for a real-time Alias-style word guessing game, featuring team lobbies, turn-based gameplay, chat communication, and smart word validation."
+  },
+  "servers": [{ "url": "/api", "description": "Local development server" }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "name": { "type": "string", "example": "John Doe" },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "example@gmail.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "player"],
+            "example": "player"
+          },
+          "active": { "type": "boolean", "example": true },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-08-26T10:00:00Z"
+          }
+        }
+      },
+      "Room": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "code": { "type": "string", "example": "ABCD123" },
+          "hostId": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "players": { "type": "array", "items": { "type": "object" } },
+          "status": {
+            "type": "string",
+            "enum": ["waiting", "in-game", "finished"],
+            "example": "waiting"
+          },
+          "teams": {
+            "type": "object",
+            "properties": {
+              "red": { "type": "array", "items": { "type": "string" } },
+              "blue": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "globalScore": {
+            "type": "object",
+            "properties": {
+              "red": { "type": "integer", "example": 10 },
+              "blue": { "type": "integer", "example": 8 }
+            }
+          },
+          "games": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "red": { "type": "integer" },
+                "blue": { "type": "integer" }
+              }
+            }
+          },
+          "public": { "type": "boolean", "example": true }
+        }
+      },
+      "Game": {
+        "type": "object",
+        "properties": {
+          "roomCode": { "type": "string" },
+          "teams": {
+            "type": "object",
+            "properties": {
+              "red": {
+                "type": "object",
+                "properties": {
+                  "players": { "type": "array", "items": { "type": "string" } },
+                  "describer": { "type": "integer" },
+                  "score": { "type": "integer" }
+                }
+              },
+              "blue": {
+                "type": "object",
+                "properties": {
+                  "players": { "type": "array", "items": { "type": "string" } },
+                  "describer": { "type": "integer" },
+                  "score": { "type": "integer" }
+                }
+              }
+            }
+          },
+          "currentTeam": { "type": "string", "nullable": true },
+          "currentDescriber": { "type": "string", "nullable": true },
+          "wordToGuess": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "wordId": { "type": "string" },
+              "word": { "type": "string" },
+              "taboo": { "type": "array", "items": { "type": "string" } },
+              "similar": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "word": { "type": "string" },
+                    "type": { "type": "string" },
+                    "similarity": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "maxTurns": { "type": "integer" },
+          "turnsPlayed": { "type": "integer" },
+          "state": {
+            "type": "string",
+            "enum": ["playing", "waiting", "finished"],
+            "example": "waiting"
+          },
+          "cooldown": {
+            "type": "object",
+            "properties": {
+              "lastSkipTime": { "type": "string", "nullable": true },
+              "describerId": { "type": "string", "nullable": true },
+              "count": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "SocketPayload": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "example": "game:message" },
+          "status": {
+            "type": "string",
+            "enum": ["success", "error", "info", "system"],
+            "example": "success"
+          },
+          "data": { "type": "object" },
+          "message": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UserRegisterRequestDTO": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "example": "example@gmail.com" },
+          "name": "string",
+          "password": {
+            "type": "string",
+            "minLength": 6
+          }
+        }
+      },
+      "UserLoginRequestDTO": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "example": "example@gmail.com" },
+          "password": {
+            "type": "string",
+            "minLength": 6
+          }
+        }
+      }
+    }
+  },
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Register new user",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRegisterRequestDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "User login",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserLoginRequestDTO" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" },
+                    "refreshToken": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh-token": {
+      "post": {
+        "summary": "Refresh access token",
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Token refreshed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": { "type": "string" },
+                    "refreshToken": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout current session",
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User logged out successfully" }
+        }
+      }
+    },
+    "/rooms": {
+      "get": {
+        "summary": "List public rooms",
+        "tags": ["Rooms"],
+        "responses": {
+          "200": {
+            "description": "List of rooms",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Room" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new room",
+        "tags": ["Rooms"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "201": {
+            "description": "Room created successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Room" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{code}": {
+      "get": {
+        "summary": "Get room by code",
+        "tags": ["Rooms"],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Room found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Room" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Leave a room",
+        "tags": ["Rooms"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "Left room successfully" } }
+      }
+    },
+    "/rooms/{code}/join": {
+      "post": {
+        "summary": "Join a room",
+        "tags": ["Rooms"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Joined room successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Room" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{code}/start": {
+      "post": {
+        "summary": "Start a game in a room",
+        "tags": ["Rooms"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game started",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Game" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{code}/status": {
+      "patch": {
+        "summary": "Update room status",
+        "tags": ["Rooms"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Room status updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Room" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-websocket-events": {
+    "connection": "Authenticated WebSocket connection using JWT.",
+    "events": [
+      {
+        "name": "chat:message",
+        "direction": "client → server",
+        "payload": { "code": "string", "user": "User", "text": "string" },
+        "response": { "$ref": "#/components/schemas/SocketPayload" }
+      },
+      {
+        "name": "game:message",
+        "direction": "client → server",
+        "payload": { "code": "string", "user": "User", "text": "string" },
+        "response": { "$ref": "#/components/schemas/SocketPayload" }
+      },
+      {
+        "name": "game:skip-word",
+        "direction": "client → server",
+        "payload": { "userId": "string", "roomCode": "string" },
+        "response": { "$ref": "#/components/schemas/SocketPayload" }
+      },
+      {
+        "name": "join-team",
+        "direction": "client → server",
+        "payload": {
+          "roomCode": "string",
+          "team": "string",
+          "userId": "string"
+        },
+        "response": { "$ref": "#/components/schemas/SocketPayload" }
+      },
+      {
+        "name": "player:left",
+        "direction": "server → client",
+        "payload": { "$ref": "#/components/schemas/SocketPayload" }
+      }
+    ]
+  }
+}
