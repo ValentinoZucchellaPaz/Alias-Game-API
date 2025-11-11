@@ -217,6 +217,22 @@ async function finishGame(game, roomCode) {
 }
 
 /**
+ * End game without saving results (e.g., due to insufficient players). Discard game.
+ * @param {*} roomCode
+ * @param {*} reason
+ * @returns
+ */
+async function interruptGame(roomCode, reason = "insufficient-players") {
+  // clear timer
+  console.log("Interrupting game for room", roomCode, "due to", reason);
+  timeManager.clearTimer(roomCode);
+
+  // delete game from cache
+  await gameCache.del(roomCode);
+
+  // emit game interrupted event
+  SocketEventEmitter.gameInterrupted(roomCode, `Game interrupted: ${reason}`);
+}
 
 async function saveGame(roomCode, game) {
   const gameData = game.gameState();
