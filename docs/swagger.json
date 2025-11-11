@@ -859,16 +859,6 @@
               }
             }
           }
-        },
-        "responses": {
-          "200": {
-            "description": "Payload result for the event",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/SocketPayload" }
-              }
-            }
-          }
         }
       }
     },
@@ -896,16 +886,6 @@
               }
             }
           }
-        },
-        "responses": {
-          "200": {
-            "description": "Payload result for the event",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/SocketPayload" }
-              }
-            }
-          }
         }
       }
     },
@@ -926,16 +906,6 @@
                 }
               },
               "example": { "userId": "123", "roomCode": "ABCD" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Payload result for the event",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/SocketPayload" }
-              }
             }
           }
         }
@@ -959,16 +929,6 @@
                 }
               },
               "example": { "roomCode": "ABCD", "team": "red", "userId": "123" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Payload result for the event",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/SocketPayload" }
-              }
             }
           }
         }
