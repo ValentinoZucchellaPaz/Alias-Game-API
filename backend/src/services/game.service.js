@@ -32,7 +32,15 @@ async function createGame(roomCode) {
 async function getGame(roomCode) {
   const gameState = await gameRepository.getGame(roomCode);
 
+  if (!gameState) {
+    return null;
+  }
+
+  console.log("Retrieved game state from repository for room", roomCode, ":", gameState);
   const game = Game.from(roomCode, gameState);
+
+  return game;
+}
 
   if (!game) {
     throw new AppError(`No game found for room ${roomCode}`);
@@ -43,6 +51,11 @@ async function getGame(roomCode) {
 
 async function handleGameTurnNext(roomCode) {
   const game = await getGame(roomCode);
+
+  if (!game) {
+    throw new AppError("No active game found for this room.");
+  }
+
   await game.nextTurn();
 
   if (game.state === "finished") {
@@ -66,6 +79,10 @@ async function handleGameTurnNext(roomCode) {
 async function checkForAnswer(userId, text, roomCode) {
   const cleanedText = cleanText(text);
   const game = await getGame(roomCode);
+
+  if (!game) {
+    throw new AppError("No active game found for this room.");
+  }
 
   if (!game || game.state !== "playing" || !cleanedText) {
     return MessageCheckResultSchema.parse({
@@ -145,6 +162,10 @@ async function checkForAnswer(userId, text, roomCode) {
 
 async function getNewWord(userId, roomCode) {
   const game = await getGame(roomCode);
+
+  if (!game) {
+    throw new AppError("No active game found for this room.");
+  }
 
   if (game.currentDescriber != userId)
     throw new AppError("User requesting new word is not current describer");
