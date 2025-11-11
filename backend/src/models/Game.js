@@ -138,6 +138,22 @@ export class Game {
     // console.log("New word to guess:", this.wordToGuess);
   }
 
+  updateTeams(teams) {
+    this.teams = {
+      red: { ...this.teams.red, players: teams.red || [] },
+      blue: { ...this.teams.blue, players: teams.blue || [] },
+    };
+
+    // ensure current describer is still valid
+    const currTeam = this.teams[this.currentTeam];
+    if (!currTeam.players.includes(this.currentDescriber)) {
+      console.log("Current describer left the team, choosing next describer.");
+      this.chooseNextDescriber();
+      return true;
+    }
+    return false;
+  }
+
   gameFinish() {
     this.state = "finished";
     return { red: this.teams.red.score, blue: this.teams.blue.score };
