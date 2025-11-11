@@ -123,30 +123,69 @@ async function joinRoom({ roomCode, userId, userName }) {
   return room;
 }
 
+/**
+ * Handle a user leaving a room: mark as inactive, balance teams, finish room if empty
+ * @param {*} { roomCode, userId, userName }
+ * @returns
+ */
 async function leaveRoom({ roomCode, userId, userName }) {
-  // checks room players, mark as inactive, if there's no one active close room, save info and emit event
   const room = await getRoom(roomCode);
 
-  const player = room.players.find((p) => p.id === userId); // players: [{id, active}]
+  // Find player and mark as inactive, if not found throw error
+  const player = room.players.find((p) => p.id === userId);
   if (!player) throw new ConflictError(`User ${userId} is not in room ${roomCode}`);
   player.active = false;
 
+  // If all players inactive, finish room
   if (room.players.every((p) => p.active === false)) {
     finishRoom(roomCode);
     return room;
   }
 
-  room.teams.red = room.teams.red.filter((id) => id !== userId); // en teams se guarda solo id
-  room.teams.blue = room.teams.blue.filter((id) => id !== userId);
+  // remove player from room teams
+  for (const teamColor of Object.keys(room.teams)) {
+    room.teams[teamColor] = room.teams[teamColor].filter((id) => id !== userId);
+  }
+
+  // emit socket event informing user left room
+  await SocketEventEmitter.leaveRoom(roomCode, userId, userName);
+
+  /** Balance teams after player leaves
+   *  If a team has less than 2 players, move one player from the other team
+   *  to balance teams. If total players < 4, end the game.
+   */
+  if (room.teams.red.length + room.teams.blue.length < 4) {
+    if (room.status === "playing") {
+      console.log("Not enough players to continue the game in room", roomCode);
+      // interrupt game, go back to lobby state("waiting")
+      await gameService.interruptGame(roomCode, "insufficient-players");
+      room.status = "waiting";
+    }
+
+    // TODO:
+    // Disable game functionality - not enough players to continue
+  } else if (room.teams.red.length < 2) {
+    room.teams.red.push(...room.teams.blue.splice(0, 1));
+  } else if (room.teams.blue.length < 2) {
+    room.teams.blue.push(...room.teams.red.splice(0, 1));
+  }
+
+  let newDescriber = null;
+  if (room.status === "playing") {
+    newDescriber = await gameService.updateGameTeams(roomCode, room.teams);
+  }
 
   await roomCache.hSet(room.code, {
+    status: room.status,
     players: JSON.stringify(room.players),
     teams: JSON.stringify(room.teams),
   });
 
-  await SocketEventEmitter.leaveRoom(roomCode, userId, userName);
   SocketEventEmitter.teamState(roomCode, room.teams);
-
+  if (newDescriber) {
+    console.log("Emitting gameUpdated with new describer:", newDescriber);
+    SocketEventEmitter.gameUpdated(roomCode, { currentDescriber: newDescriber });
+  }
   return room;
 }
 
