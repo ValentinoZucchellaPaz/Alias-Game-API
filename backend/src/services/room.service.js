@@ -220,17 +220,25 @@ async function updateTeams(roomCode, team, userId) {
   return room;
 }
 
-// Obtener las primeras `limit` rooms con status "waiting" desde la base de datos
-async function getRooms(limit = 10) {
-  const rooms = await Room.findAll({
-    where: { status: "waiting" },
-    order: [["createdAt", "ASC"]],
-    limit,
-  });
+/**
+ * Get a list of rooms with a limit on the number of rooms returned
+ * @param {*} limit
+ * @returns
+ */
+async function getRooms(limit = 30) {
+  let rooms = await roomCache.getAllFromNamespace(limit);
 
-  return rooms.map((r) => r.get({ plain: true }));
+  console.log("Rooms fetched from Redis:", rooms);
+  rooms = rooms.map((room) => safeParse(room)).filter((room) => room.status === "waiting");
+  return rooms;
 }
 
+/**
+ * Update room information after a game finishes: update global score, games array, status
+ * @param {*} roomCode
+ * @param {*} gameScore
+ * @returns
+ */
 async function updateRoom(roomCode, gameScore) {
   const room = await getRoom(roomCode);
   if (gameScore.red != gameScore.blue) {
