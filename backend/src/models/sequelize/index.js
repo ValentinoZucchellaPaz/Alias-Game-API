@@ -3,6 +3,7 @@ import seedAdmin from "../../config/seedAdmin.js";
 import User from "./User.js";
 import Room from "./Room.js";
 import seedWords from "../../config/seedWords.js";
+import { logger } from "../../utils/logger.js";
 
 export const syncDB = async () => {
   try {
@@ -14,9 +15,9 @@ export const syncDB = async () => {
     await seedAdmin();
     await seedWords();
 
-    console.log("✅ DB ready");
+    logger.info("✅ DB ready");
   } catch (err) {
-    console.error("❌ Failed to sync DB:", err);
+    logger.error("❌ Failed to sync DB:", err);
   }
 };
 

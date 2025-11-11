@@ -12,6 +12,7 @@ import {
   socketConnectionRateLimitMiddleware,
 } from "../middlewares/socketMiddlewares/connection.js";
 import { socketErrorHandler } from "../middlewares/socketErrorHandler.js";
+import { logger } from "../utils/logger.js";
 
 // FIXME: idea, in the future analize a refactor to depend less in the info comming from the client and use redis and the socket instance info to handle here
 
@@ -28,7 +29,7 @@ export default function registerRoomSocket(io) {
   io.use(socketAuthMiddleware);
 
   io.on("connection", (socket) => {
-    console.log(`Socket conectado: ${socket.id}`);
+    logger.info(`Socket conectado: ${socket.id}`);
 
     // Event rate limiters
     socket.use(chatRateLimitMiddleware(socket));
@@ -77,7 +78,7 @@ export default function registerRoomSocket(io) {
               break;
           }
         } catch (err) {
-          console.error("Error processing game message: ", err);
+          logger.error("Error processing game message: ", err);
         }
       })
     );
@@ -123,10 +124,10 @@ export default function registerRoomSocket(io) {
 
         // Clear mapping (socket -> userId) of Redis
         await socketCache.del(socket.userId);
-        console.log(`🗑️ Cleared socket mapping for userId=${socket.userId}`);
-        console.log(`Socket desconectado: ${socket.id}; Reason: ${reason}`);
+        logger.info(`🗑️ Cleared socket mapping for userId=${socket.userId}`);
+        logger.info(`Socket desconectado: ${socket.id}; Reason: ${reason}`);
       } catch (err) {
-        console.error(`Error handling disconnect for userId=${socket.userId}`, err);
+        logger.error(`Error handling disconnect for userId=${socket.userId}`, err);
       }
     });
 
@@ -142,10 +143,10 @@ export default function registerRoomSocket(io) {
 export function withSocketErrorHandling(socket, handler) {
   return async (...args) => {
     try {
-      console.log(`Handling event for socket ${socket.id} with args:`, args);
+      logger.info(`Handling event for socket ${socket.id} with args:`, args);
       await handler(...args);
     } catch (err) {
-      console.error(`⚠️ Error in event handler for socket ${socket.id}:`, err);
+      logger.error(`⚠️ Error in event handler for socket ${socket.id}:`, err);
       socketErrorHandler(socket, err);
     }
   };

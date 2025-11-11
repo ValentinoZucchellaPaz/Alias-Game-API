@@ -26,7 +26,7 @@ describe("Correct connection to Postgres and Redis", () => {
       await sequelize.authenticate();
       dbConnected = true;
     } catch (err) {
-      console.error("❌ Cannot connect to Postgres:", err);
+      logger.error("❌ Cannot connect to Postgres:", err);
     }
 
     // try redis connection
@@ -35,7 +35,7 @@ describe("Correct connection to Postgres and Redis", () => {
       await healthTestCache.client.ping();
       redisConnected = true;
     } catch (err) {
-      console.error("❌ Redis unavailable:", err);
+      logger.error("❌ Redis unavailable:", err);
     }
 
     // dont run tests if any is not connected

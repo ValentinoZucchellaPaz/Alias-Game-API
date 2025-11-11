@@ -5,6 +5,7 @@ import { RedisClientSingleton } from "./config/redis.js";
 import { createServer } from "http";
 import registerRoomSocket from "./sockets/registerRoomSocket.js";
 import { SocketEventEmitter } from "./sockets/SocketEventEmmiter.js";
+import { logger } from "./utils/logger.js";
 
 const PORT = 4000;
 
@@ -20,7 +21,7 @@ server.listen(PORT, async () => {
   await syncDB();
   const client = await RedisClientSingleton.getInstance(); // init singleton
   await cleanupInterruptedRooms(client); // clear interrupted rooms
-  console.log(`Server running on port http://localhost:${PORT}`);
+  logger.info(`Server running on port http://localhost:${PORT}`);
 });
 
 /**
@@ -54,6 +55,6 @@ async function cleanupInterruptedRooms(client) {
       cleanedCount++;
     }
   }
-  console.log(`✅ Cleaned up ${cleanedCount} interrupted rooms in Redis and Postgres`);
+  logger.info(`✅ Cleaned up ${cleanedCount} interrupted rooms in Redis and Postgres`);
   return;
 }

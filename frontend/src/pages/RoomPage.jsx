@@ -251,12 +251,6 @@ export default function RoomPage() {
 
   return (
     <div className="room-page">
-      {error && (
-        <p style={{ color: "red", textAlign: "center", marginBottom: "10px" }}>
-          Error: {error}
-        </p>
-      )}
-
       <button onClick={() => navigate("/")} className="home-button">
         Home
       </button>
@@ -270,6 +264,12 @@ export default function RoomPage() {
         onLeaveRoom={handleLeaveRoom}
         onSkipWord={handleSkipWord}
       />
+
+      {error && (
+        <p style={{ color: "red", textAlign: "center", margin: "10px auto" }}>
+          Error: {error}
+        </p>
+      )}
 
       <main className="room-content">
         <aside className="room-sidebar">

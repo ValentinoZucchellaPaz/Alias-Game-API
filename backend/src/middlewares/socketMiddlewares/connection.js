@@ -3,12 +3,13 @@ import { AppError, RateLimitError } from "../../utils/errors.js";
 import jwt from "../../utils/jwt.js";
 import { socketConnectionLimiter } from "./limiters/rateLimiters.js";
 import { getSocketIp, tryConsumeLimiter } from "../limiterHelpers.js";
+import { logger } from "../../utils/logger.js";
 
 /**
  * Connection rate limiting middleware for socket.io
  */
 export const socketConnectionRateLimitMiddleware = async (socket, next) => {
-  console.log("New socket connection attempt:", socket.id);
+  logger.info("New socket connection attempt:", socket.id);
   // rate limiter
   const ip = getSocketIp(socket);
 
@@ -27,7 +28,7 @@ export const socketConnectionRateLimitMiddleware = async (socket, next) => {
  * Authentication middleware for socket.io
  */
 export const socketAuthMiddleware = async (socket, next) => {
-  console.log("Authenticating socket:", socket.id);
+  logger.info("Authenticating socket:", socket.id);
   const token = socket.handshake.auth?.token;
   if (!token) return next(new Error("No token in handshake auth"));
 

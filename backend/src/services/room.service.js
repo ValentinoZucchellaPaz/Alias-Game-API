@@ -6,6 +6,7 @@ import { AppError, ConflictError } from "../utils/errors.js";
 import { v4 as uuidv4 } from "uuid";
 import { safeParse } from "../utils/objects.js";
 import gameService from "./game.service.js";
+import { logger } from "../utils/logger.js";
 
 async function createRoom({ hostId, hostName }) {
   // create room in db, save in redis and emit socket event to join room
@@ -153,7 +154,7 @@ async function leaveRoom({ roomCode, userId, userName }) {
    */
   if (room.teams.red.length + room.teams.blue.length < 4) {
     if (room.status === "playing") {
-      console.log("Not enough players to continue the game in room", roomCode);
+      logger.error("Not enough players to continue the game in room, interrupting game", roomCode);
       // interrupt game, go back to lobby state("waiting")
       await gameService.interruptGame(roomCode, "insufficient-players");
       room.status = "waiting";
@@ -180,7 +181,7 @@ async function leaveRoom({ roomCode, userId, userName }) {
 
   SocketEventEmitter.teamState(roomCode, room.teams);
   if (newDescriber) {
-    console.log("Emitting gameUpdated with new describer:", newDescriber);
+    logger.log("Emitting gameUpdated with new describer:", newDescriber);
     SocketEventEmitter.gameUpdated(roomCode, { currentDescriber: newDescriber });
   }
   return room;
@@ -256,7 +257,7 @@ async function updateTeams(roomCode, team, userId) {
 async function getRooms(limit = 30) {
   let rooms = await roomCache.getAllFromNamespace(limit);
 
-  console.log("Rooms fetched from Redis:", rooms);
+  logger.log("Rooms fetched from Redis:", rooms);
   rooms = rooms.map((room) => safeParse(room)).filter((room) => room.status === "waiting");
   return rooms;
 }

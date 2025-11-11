@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Word, TabooWord, SimilarWord } from "../models/sequelize/words/index.js";
+import { logger } from "../utils/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,7 +48,7 @@ export default async function seedWords() {
     return;
   }
 
-  console.log("🌱 Starting word seed from /static...");
+  logger.info("🌱 Starting word seed from /static...");
 
   try {
     const files = await fs.readdir(STATIC_PATH);
@@ -55,7 +56,7 @@ export default async function seedWords() {
 
     for (const file of jsonFiles) {
       const category = path.basename(file, ".json");
-      console.log(`📂 Processing category: ${category}`);
+      logger.info(`📂 Processing category: ${category}`);
 
       const filePath = path.join(STATIC_PATH, file);
       const raw = await fs.readFile(filePath, "utf8");
@@ -82,7 +83,7 @@ export default async function seedWords() {
 
       for (let i = 0; i < words.length; i += batchSize) {
         const batch = words.slice(i, i + batchSize);
-        console.log(`🔎 Processing batch ${i / batchSize + 1} of ${category}...`);
+        logger.info(`🔎 Processing batch ${i / batchSize + 1} of ${category}...`);
 
         await Promise.all(
           batch.map(async (w) => {
@@ -134,7 +135,7 @@ export default async function seedWords() {
 
               if (similars.length > 0) await SimilarWord.bulkCreate(similars);
             } catch (err) {
-              console.error(`❌ Error getting similar word for "${w}":`, err.message);
+              logger.error(`❌ Error getting similar word for "${w}":`, err.message);
             }
           })
         );
@@ -142,11 +143,11 @@ export default async function seedWords() {
         await wait(delayMs);
       }
 
-      console.log(`✅ Category ${category} completed.`);
+      logger.info(`✅ Category ${category} completed.`);
     }
 
-    console.log("🌳 Word seed completed succesfully.");
+    logger.info("🌳 Word seed completed succesfully.");
   } catch (err) {
-    console.error("❌ Error in seedWords:", err);
+    logger.error("❌ Error in seedWords:", err);
   }
 }

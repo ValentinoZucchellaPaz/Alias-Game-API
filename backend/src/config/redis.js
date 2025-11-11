@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import dotenv from "dotenv";
+import { logger } from "../utils/logger.js";
 dotenv.config();
 
 class RedisClientSingleton {
@@ -19,10 +20,10 @@ class RedisClientSingleton {
       lazyConnect: true, // manual connect for timeout race
     });
 
-    client.on("error", (err) => console.error("❌ Redis Client Error:", err));
+    client.on("error", (err) => logger.error("❌ Redis Client Error:", err));
     client.on("end", () => {
       RedisClientSingleton.connected = false;
-      console.warn("⚠️ Redis connection closed");
+      logger.warn("⚠️ Redis connection closed");
     });
 
     // timeout protection
@@ -35,10 +36,10 @@ class RedisClientSingleton {
       await Promise.race([connectPromise, timeoutPromise]);
       RedisClientSingleton.instance = client;
       RedisClientSingleton.connected = true;
-      console.log("✅ Connected to Redis (singleton, ioredis)");
+      logger.info("✅ Connected to Redis (singleton, ioredis)");
       return client;
     } catch (err) {
-      console.error("❌ Redis connection failed:", err.message);
+      logger.error("❌ Redis connection failed:", err.message);
       client.disconnect();
       throw err;
     }
@@ -48,7 +49,7 @@ class RedisClientSingleton {
     if (RedisClientSingleton.instance && RedisClientSingleton.connected) {
       await RedisClientSingleton.instance.quit();
       RedisClientSingleton.connected = false;
-      console.log("Redis disconnected!");
+      logger.info("Redis disconnected!");
     }
   }
 }
@@ -106,7 +107,7 @@ class RedisWrapper {
   // For retrieving all rooms use `zrange` in this index to get all saved keys
   async hSet(key, data, ttl) {
     await this.init();
-    console.log("redisClient.hSet (esto se esta guardando en redis):", this._key(key), data, ttl);
+    logger.log("redisClient.hSet (this is being save in redis):", this._key(key), data, ttl);
 
     // adds key as a value in an index
     await this.client.zadd(this._key("index"), Date.now(), this._key(key));
@@ -119,7 +120,7 @@ class RedisWrapper {
   async hGetAll(key) {
     await this.init();
     const data = await this.client.hgetall(this._key(key));
-    console.log("redisClient.hGetAll (esto se esta sacando de redis):", this._key(key), data);
+    logger.log("redisClient.hGetAll (this is being retrieve from redis):", this._key(key), data);
     return Object.keys(data).length ? data : null;
   }
 

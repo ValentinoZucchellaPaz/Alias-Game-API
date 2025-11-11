@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config({ quiet: true });
+
 const isDev = process.env.NODE_ENV === "dev" || process.env.NODE_ENV === "development";
 
 export const logger = {

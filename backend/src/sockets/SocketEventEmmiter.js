@@ -1,5 +1,6 @@
 import { socketCache } from "../config/redis.js";
 import { AppError } from "../utils/errors.js";
+import { logger } from "../utils/logger.js";
 
 function buildPayload(type, status, data = {}, message = "") {
   return {
@@ -17,11 +18,11 @@ export class SocketEventEmitter {
 
   static init(ioInstance) {
     if (SocketEventEmitter.io) {
-      console.warn("⚠️ SocketEventEmitter already initialized");
+      logger.warn("⚠️ SocketEventEmitter already initialized");
       return;
     }
     SocketEventEmitter.io = ioInstance;
-    console.log("✅ SocketEventEmitter initialized");
+    logger.info("✅ SocketEventEmitter initialized");
   }
 
   static getIO() {
@@ -158,7 +159,6 @@ export class SocketEventEmitter {
   }
 
   static similarWord(code, user, text, similarWord) {
-    console.log("esto es la similar word que llega al emmiter: ", similarWord);
     this.getIO()
       .to(code)
       .emit(
@@ -174,7 +174,7 @@ export class SocketEventEmitter {
   }
 
   static gameInterrupted(roomCode, message) {
-    console.log("Emitting game interrupted to room:", roomCode, "message:", message);
+    logger.info("Emitting game interrupted to room:", roomCode, "message:", message);
     this.getIO()
       .to(roomCode)
       .emit(

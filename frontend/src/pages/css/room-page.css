@@ -7,6 +7,10 @@
   color: #fff;
 }
 
+.room-page .home-button {
+  max-width: fit-content;
+}
+
 .room-header {
   display: flex;
   justify-content: space-between;
@@ -43,7 +47,7 @@
   flex: 1;
   overflow: hidden;
   gap: 32px;
-  padding-top: 16px;
+  padding-top: 10px;
 }
 
 .room-sidebar {

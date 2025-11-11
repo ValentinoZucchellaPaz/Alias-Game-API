@@ -5,13 +5,14 @@ import gameRepository from "../repositories/game.repository.js";
 import { MessageCheckResultSchema } from "../schemas/word.schema.js";
 import { SocketEventEmitter } from "../sockets/SocketEventEmmiter.js";
 import { AppError } from "../utils/errors.js";
+import { logger } from "../utils/logger.js";
 import { checkSimilarWords, checkTabooWord, cleanText } from "../utils/words.js";
 import roomService from "./room.service.js";
 
 async function createGame(roomCode) {
   const room = await roomService.getRoom(roomCode);
   const teams = room.teams;
-  console.log(teams);
+
   // TODO: check if the player wanting to start a new game belongs to the room
   // If the room is not waiting for players => reject
   if (room.status != "waiting") throw new AppError("Cannot start a game now", 400);
@@ -38,7 +39,7 @@ async function getGame(roomCode) {
     return null;
   }
 
-  console.log("Retrieved game state from repository for room", roomCode, ":", gameState);
+  logger.log("Retrieved game state from repository for room", roomCode, ":", gameState);
   const game = Game.from(roomCode, gameState);
 
   return game;
@@ -240,7 +241,7 @@ async function finishGame(game, roomCode) {
  */
 async function interruptGame(roomCode, reason = "insufficient-players") {
   // clear timer
-  console.log("Interrupting game for room", roomCode, "due to", reason);
+  logger.log("Interrupting game for room", roomCode, "due to", reason);
   timeManager.clearTimer(roomCode);
 
   // delete game from cache
