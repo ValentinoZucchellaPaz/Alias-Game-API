@@ -59,14 +59,7 @@ async function handleGameTurnNext(roomCode) {
   await game.nextTurn();
 
   if (game.state === "finished") {
-    timeManager.clearTimer(roomCode);
-    const results = game.gameFinish();
-
-    // update room results and delete game from redis
-    roomService.updateRoom(roomCode, results);
-    await gameCache.del(roomCode);
-    SocketEventEmitter.gameFinished(roomCode, results);
-    return results;
+    return await finishGame(game, roomCode);
   }
 
   setTimerForGame(roomCode, game);
@@ -190,6 +183,33 @@ function setTimerForGame(roomCode, game) {
     handleGameTurnNext(roomCode);
   });
 }
+
+/**
+ * Finish the game successfully: clear timer, save results, delete game from redis, emit event
+ * @param {*} game
+ * @param {*} roomCode
+ * @returns
+ */
+async function finishGame(game, roomCode) {
+  // clear timer
+  timeManager.clearTimer(roomCode);
+
+  // get results and mark game as finished
+  const results = game.gameFinish();
+
+  // update room results
+  roomService.updateRoom(roomCode, results);
+
+  // delete game from cache
+  await gameCache.del(roomCode);
+
+  // emit game finished event
+  SocketEventEmitter.gameFinished(roomCode, results);
+
+  return results;
+}
+
+/**
 
 async function saveGame(roomCode, game) {
   const gameData = game.gameState();
