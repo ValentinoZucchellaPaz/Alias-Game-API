@@ -42,11 +42,18 @@ async function getGame(roomCode) {
   return game;
 }
 
+async function updateGameTeams(roomCode, teams) {
+  const game = await getGame(roomCode);
+
   if (!game) {
-    throw new AppError(`No game found for room ${roomCode}`);
+    throw new AppError("No active game found for this room.");
   }
 
-  return game;
+  const newDescriber = game.updateTeams(teams);
+
+  await saveGame(roomCode, game);
+
+  return newDescriber ? game.currentDescriber : null;
 }
 
 async function handleGameTurnNext(roomCode) {
