@@ -239,4 +239,13 @@ async function saveGame(roomCode, game) {
   return await gameRepository.updateGame(roomCode, gameData);
 }
 
-export default { createGame, getGame, handleGameTurnNext, checkForAnswer, getNewWord };
+export default {
+  createGame,
+  getGame,
+  handleGameTurnNext,
+  checkForAnswer,
+  getNewWord,
+  updateGameTeams,
+  saveGame,
+  interruptGame,
+};

@@ -331,4 +331,13 @@ async function finishRoom(roomCode) {
   return room;
 }
 
-export default { createRoom, getRoom, joinRoom, leaveRoom, updateTeams, getRooms, updateRoom };
+export default {
+  createRoom,
+  getRoom,
+  joinRoom,
+  leaveRoom,
+  startGame,
+  updateTeams,
+  getRooms,
+  updateRoom,
+};
