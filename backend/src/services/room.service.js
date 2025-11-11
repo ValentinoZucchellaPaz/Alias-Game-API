@@ -4,6 +4,8 @@ import timeManager from "../models/TimerManager.js";
 import { SocketEventEmitter } from "../sockets/SocketEventEmmiter.js";
 import { AppError, ConflictError } from "../utils/errors.js";
 import { v4 as uuidv4 } from "uuid";
+import { safeParse } from "../utils/objects.js";
+import gameService from "./game.service.js";
 
 async function createRoom({ hostId, hostName }) {
   // create room in db, save in redis and emit socket event to join room
@@ -165,6 +167,35 @@ async function leaveRoom({ roomCode, userId, userName }) {
   return room;
 }
 
+/**
+ * Start a new game in the specified room
+ * @param {*} _roomCode
+ * @returns
+ */
+async function startGame(_roomCode) {
+  // create game instance
+  const { roomCode, game } = await gameService.createGame(_roomCode);
+
+  const room = await getRoom(roomCode);
+
+  // update room status to playing
+  room.status = "playing";
+
+  // save updated room status in Redis
+  await roomCache.hSet(roomCode, {
+    status: room.status,
+  });
+
+  return { roomCode, game };
+}
+
+/**
+ * Update the teams of a room, ensuring no active game is in progress
+ * @param {*} roomCode
+ * @param {*} team
+ * @param {*} userId
+ * @returns
+ */
 async function updateTeams(roomCode, team, userId) {
   const room = await getRoom(roomCode);
 
