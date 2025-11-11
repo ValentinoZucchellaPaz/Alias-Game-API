@@ -132,24 +132,7 @@ async function leaveRoom({ roomCode, userId, userName }) {
   player.active = false;
 
   if (room.players.every((p) => p.active === false)) {
-    timeManager.clearTimer(roomCode);
-
-    room.status = "finished";
-    await Room.update(
-      {
-        players: room.players,
-        teams: room.teams,
-        globalScore: room.globalScore,
-        games: room.games,
-        status: room.status,
-      },
-      { where: { code: room.code } }
-    );
-    await roomCache.del(room.code);
-
-    // make all users of room leave room
-    await SocketEventEmitter.closeRoom(roomCode, userId, userName, room.globalScore);
-
+    finishRoom(roomCode);
     return room;
   }
 
@@ -270,6 +253,32 @@ async function updateRoom(roomCode, gameScore) {
   return room;
 }
 
+/**
+ * Handle room finishing: clear timers, update status in DB and Redis, emit socket event
+ * @param {*} roomCode
+ * @returns
+ */
+async function finishRoom(roomCode) {
+  // Clear any active timers
+  timeManager.clearTimer(roomCode);
+
+  const room = await getRoom(roomCode);
+  // Update room status to finished
+  room.status = "finished";
+
+  // Update Psql
+  await Room.update(
+    {
+      ...room,
+    },
+    { where: { code: roomCode } }
+  );
+
+  // Delete room from Redis
+  await roomCache.del(roomCode);
+
+  // Emit socket event to notify room closure
+  SocketEventEmitter.closeRoom(roomCode, null, null, room.globalScore);
   return room;
 }
 
