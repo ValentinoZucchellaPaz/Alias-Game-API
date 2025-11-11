@@ -1,5 +1,5 @@
 import { SocketEventEmitter } from "../sockets/SocketEventEmmiter.js";
-import { RateLimitError } from "../utils/errors.js";
+import { AppError, RateLimitError } from "../utils/errors.js";
 
 export function socketErrorHandler(socket, err) {
   // --- Handle RateLimiter errors ---
@@ -8,6 +8,13 @@ export function socketErrorHandler(socket, err) {
     return;
   }
 
+  if (err instanceof AppError) {
+    console.log("AppError occurred:", err);
+    SocketEventEmitter.error(socket, err.serialize());
+    return;
+  }
+
+  console.error("Internal server error occurred:", err);
   SocketEventEmitter.internalError(socket, err.serialize());
   return;
 }

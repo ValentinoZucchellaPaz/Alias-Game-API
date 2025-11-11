@@ -173,6 +173,16 @@ export class SocketEventEmitter {
       .emit("game:finished", buildPayload("game:finished", "system", { results }, "Game finished"));
   }
 
+  static gameInterrupted(roomCode, message) {
+    console.log("Emitting game interrupted to room:", roomCode, "message:", message);
+    this.getIO()
+      .to(roomCode)
+      .emit(
+        "game:interrupted",
+        buildPayload("game:interrupted", "system", {}, message || "Game interrupted")
+      );
+  }
+
   static async sendNewWord(userId, roomCode, game, errorMessage) {
     const io = this.getIO();
     if (!game && errorMessage) {
@@ -210,10 +220,24 @@ export class SocketEventEmitter {
       .emit("team-state", buildPayload("team-state", "info", { teams }, "Team state updated"));
   }
 
+  static async gameUpdated(roomCode, gameData) {
+    this.getIO()
+      .to(roomCode)
+      .emit(
+        "game:updated",
+        buildPayload("game:updated", "info", { gameData }, "Game state updated")
+      );
+  }
+
   static async rateLimitWarning(socket, err) {
     if (!socket) return;
 
     socket.emit("rateLimitWarning", buildPayload("rateLimitWarning", "429", err, err.message));
+  }
+
+  static async error(socket, err) {
+    if (!socket) return;
+    socket.emit("error", buildPayload("error", "400", err, err.message));
   }
 
   static async internalError(socket, err) {

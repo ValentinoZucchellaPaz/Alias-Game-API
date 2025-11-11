@@ -87,16 +87,32 @@ class RedisWrapper {
   }
 
   async del(key) {
-    console.log("borrando key de Redis", this._key(key));
     await this.init();
+    // Remove keys from index tracking
+    await this.client.zrem(this._key("index"), this._key(key));
+    // Delete the actual hash asociated with the key
     await this.client.del(this._key(key));
   }
 
-  // metodos para rooms
+  /**
+   * Save a hash in redis, and add to index of keys for tracking all saved hashes
+   * @param {*} key
+   * @param {*} data
+   * @param {*} ttl
+   */
+  // Nota: Antes usaba solo hset sin index, pero no habia forma facil de obtener todas las rooms guardadas.
+  // Empeze a usar `zadd` tambien, que es basicamente un sorted set para tener un index de keys con timestamp.
+  // Cada vez que se guarda un hash(por ejemplo una room), se agrega su key a este sorted set(`this._key("index")` o por ejemplo `alias-game:room:index`) con timestamp actual.
+  // Despues, para obtener todas las rooms, se puede hacer un `zrange` en este index para obtener todas las keys guardadas.
   async hSet(key, data, ttl) {
     await this.init();
     console.log("redisClient.hSet (esto se esta guardando en redis):", this._key(key), data, ttl);
+
+    // Agregar a index de room codes
+    await this.client.zadd(this._key("index"), Date.now(), this._key(key));
+    // Guardar informacion de la room
     await this.client.hset(this._key(key), data);
+    // Establecer tiempo de expiracion
     if (ttl ?? this.ttl) await this.client.expire(this._key(key), ttl ?? this.ttl);
   }
 
@@ -105,6 +121,23 @@ class RedisWrapper {
     const data = await this.client.hgetall(this._key(key));
     console.log("redisClient.hGetAll (esto se esta sacando de redis):", this._key(key), data);
     return Object.keys(data).length ? data : null;
+  }
+
+  // Obtener todos los items en el namespace(Wrapper) (ejemplo: todas las rooms)
+  async getAllFromNamespace(limit = 10) {
+    await this.init();
+
+    // Obtener todas las keys del index
+    const keys = await this.client.zrange(this._key("index"), 0, limit - 1);
+    // Obtener todos los hashes asociados a esas keys
+    const values = await Promise.all(
+      keys.map(async (key) => {
+        let rooms = await this.client.hgetall(key);
+        return rooms;
+      })
+    );
+    // Filtrar valores nulos o vacios y devolver
+    return values.filter((value) => value && Object.keys(value).length > 0);
   }
 }
 

@@ -55,7 +55,7 @@ export const startGame = async (req, res) => {
   // antes fijarme que no haya games pendientes de esta sala, cerrarlos si es asi?
   // fijarme que usuario que manda req pertenezca a room y este activo
 
-  const { roomCode, game } = await gameService.createGame(code);
+  const { roomCode, game } = await roomService.startGame(code);
   SocketEventEmitter.gameStarted(code, game);
   res.status(201).json(game);
 };

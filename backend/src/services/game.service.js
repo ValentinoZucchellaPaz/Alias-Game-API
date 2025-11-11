@@ -32,28 +32,41 @@ async function createGame(roomCode) {
 async function getGame(roomCode) {
   const gameState = await gameRepository.getGame(roomCode);
 
-  const game = Game.from(roomCode, gameState);
-
-  if (!game) {
-    throw new AppError(`No game found for room ${roomCode}`);
+  if (!gameState) {
+    return null;
   }
+
+  console.log("Retrieved game state from repository for room", roomCode, ":", gameState);
+  const game = Game.from(roomCode, gameState);
 
   return game;
 }
 
+async function updateGameTeams(roomCode, teams) {
+  const game = await getGame(roomCode);
+
+  if (!game) {
+    throw new AppError("No active game found for this room.");
+  }
+
+  const newDescriber = game.updateTeams(teams);
+
+  await saveGame(roomCode, game);
+
+  return newDescriber ? game.currentDescriber : null;
+}
+
 async function handleGameTurnNext(roomCode) {
   const game = await getGame(roomCode);
+
+  if (!game) {
+    throw new AppError("No active game found for this room.");
+  }
+
   await game.nextTurn();
 
   if (game.state === "finished") {
-    timeManager.clearTimer(roomCode);
-    const results = game.gameFinish();
-
-    // update room results and delete game from redis
-    roomService.updateRoom(roomCode, results);
-    await gameCache.del(roomCode);
-    SocketEventEmitter.gameFinished(roomCode, results);
-    return results;
+    return await finishGame(game, roomCode);
   }
 
   setTimerForGame(roomCode, game);
@@ -66,6 +79,10 @@ async function handleGameTurnNext(roomCode) {
 async function checkForAnswer(userId, text, roomCode) {
   const cleanedText = cleanText(text);
   const game = await getGame(roomCode);
+
+  if (!game) {
+    throw new AppError("No active game found for this room.");
+  }
 
   if (!game || game.state !== "playing" || !cleanedText) {
     return MessageCheckResultSchema.parse({
@@ -160,6 +177,10 @@ async function checkForAnswer(userId, text, roomCode) {
 async function getNewWord(userId, roomCode) {
   const game = await getGame(roomCode);
 
+  if (!game) {
+    throw new AppError("No active game found for this room.");
+  }
+
   if (game.currentDescriber != userId)
     throw new AppError("User requesting new word is not current describer");
 
@@ -184,9 +205,61 @@ function setTimerForGame(roomCode, game) {
   });
 }
 
+/**
+ * Finish the game successfully: clear timer, save results, delete game from redis, emit event
+ * @param {*} game
+ * @param {*} roomCode
+ * @returns
+ */
+async function finishGame(game, roomCode) {
+  // clear timer
+  timeManager.clearTimer(roomCode);
+
+  // get results and mark game as finished
+  const results = game.gameFinish();
+
+  // update room results
+  roomService.updateRoom(roomCode, results);
+
+  // delete game from cache
+  await gameCache.del(roomCode);
+
+  // emit game finished event
+  SocketEventEmitter.gameFinished(roomCode, results);
+
+  return results;
+}
+
+/**
+ * End game without saving results (e.g., due to insufficient players). Discard game.
+ * @param {*} roomCode
+ * @param {*} reason
+ * @returns
+ */
+async function interruptGame(roomCode, reason = "insufficient-players") {
+  // clear timer
+  console.log("Interrupting game for room", roomCode, "due to", reason);
+  timeManager.clearTimer(roomCode);
+
+  // delete game from cache
+  await gameCache.del(roomCode);
+
+  // emit game interrupted event
+  SocketEventEmitter.gameInterrupted(roomCode, `Game interrupted: ${reason}`);
+}
+
 async function saveGame(roomCode, game) {
   const gameData = game.gameState();
   return await gameRepository.updateGame(roomCode, gameData);
 }
 
-export default { createGame, getGame, handleGameTurnNext, checkForAnswer, getNewWord };
+export default {
+  createGame,
+  getGame,
+  handleGameTurnNext,
+  checkForAnswer,
+  getNewWord,
+  updateGameTeams,
+  saveGame,
+  interruptGame,
+};

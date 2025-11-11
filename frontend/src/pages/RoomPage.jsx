@@ -113,6 +113,15 @@ export default function RoomPage() {
           ]);
           break;
 
+        case "game:interrupted":
+          console.log("Game interrupted message:", message);
+          setRoomState("lobby");
+          setMessages((prev) => [
+            ...prev,
+            { text: message, status, timestamp },
+          ]);
+          break;
+
         case "game:new-word":
           console.log(
             "recibiendo new word",
@@ -156,11 +165,23 @@ export default function RoomPage() {
           setRoomData((prev) => ({ ...prev, ...data.roomInfo }));
           break;
 
+        case "game:updated":
+          setGameData((prev) => ({ ...prev, ...data.gameData }));
+          setMessages((prev) => [
+            ...prev,
+            { text: "Game state updated", status, timestamp },
+          ]);
+          break;
+
         case "rateLimitWarning":
           if (data.type === "rate_limit") {
             setError(data.message || "Rate limit exceeded");
           }
+          break;
 
+        case "error":
+          console.error("Socket error event:", data);
+          setError(data.message || "Application error occurred");
           break;
 
         default:
@@ -178,19 +199,17 @@ export default function RoomPage() {
       "game:correct-answer",
       "game:turn-updated",
       "game:finished",
+      "game:interrupted",
       "game:taboo-word",
       "game:new-word",
       "game:similar-word",
+      "game:updated",
       "room:updated",
       "rateLimitWarning",
+      "error",
     ];
 
     eventNames.forEach((event) => socket.on(event, handleSocketEvent));
-
-    socket.on("error", (err) => {
-      console.error("Socket error event:", err);
-      alert("Socket error");
-    });
 
     return () => {
       eventNames.forEach((event) => socket.off(event, handleSocketEvent));
@@ -234,7 +253,6 @@ export default function RoomPage() {
     socket.emit("game:skip-word", { userId: user.id, roomCode });
   };
 
-  console.log("Error state:", error);
   // Render
   if (loading)
     return (
@@ -248,6 +266,10 @@ export default function RoomPage() {
           Error: {error}
         </p>
       )}
+
+      <button onClick={() => navigate("/")} className="home-button">
+        Home
+      </button>
 
       <RoomHeader
         roomCode={roomCode}
