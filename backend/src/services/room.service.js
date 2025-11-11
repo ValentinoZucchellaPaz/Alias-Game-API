@@ -241,24 +241,35 @@ async function getRooms(limit = 30) {
  */
 async function updateRoom(roomCode, gameScore) {
   const room = await getRoom(roomCode);
+
+  // update room global score
   if (gameScore.red != gameScore.blue) {
     // ties doesnt sum up points
     const winner = gameScore.red > gameScore.blue ? "red" : "blue";
     room.globalScore[winner] += 1;
   }
   room.games.push(gameScore);
+
+  // update room status to waiting again in both Redis and PSQL.
+  room.status = "waiting";
   await roomCache.hSet(roomCode, {
     globalScore: JSON.stringify(room.globalScore),
     games: JSON.stringify(room.games),
   });
-  console.log("a punto de actualizar db con room ", room);
+
   await Room.update(
     {
       ...room,
     },
     { where: { code: roomCode } }
   );
+
+  // emit socket event to update room info on client.
   SocketEventEmitter.updateRoom(roomCode, room);
+
+  return room;
+}
+
   return room;
 }
 
