@@ -221,11 +221,17 @@ async function startGame(_roomCode) {
 async function updateTeams(roomCode, team, userId) {
   const room = await getRoom(roomCode);
 
-  // validaciones - agregar chequeo si se esta ingame, entonces no puede cambiar de equipo
-  const player = room.players.find((p) => p.id === userId); // players: [{id, active}]
+  // check if game is in progress. If so, prevent team changes
+  if (room.status === "playing") {
+    throw new ConflictError("Cannot change teams while game is in progress");
+  }
+
+  // If user is not active in room, cannot change team
+  const player = room.players.find((p) => p.id === userId);
   if (!player || !player.active)
     throw new ConflictError(`User ${userId} is not in room ${roomCode}`);
 
+  // If user is not in the target team, move them to that team
   if (team == "red" && !room.teams.red.includes(userId)) {
     room.teams.blue = room.teams.blue.filter((id) => id != userId);
     room.teams.red.push(userId);
@@ -233,10 +239,13 @@ async function updateTeams(roomCode, team, userId) {
     room.teams.red = room.teams.red.filter((id) => id != userId);
     room.teams.blue.push(userId);
   }
+
+  // Save updated teams in Redis
   await roomCache.hSet(room.code, {
     teams: JSON.stringify(room.teams),
   });
 
+  // Emit socket event to update clients
   SocketEventEmitter.teamState(roomCode, room.teams);
 
   return room;
