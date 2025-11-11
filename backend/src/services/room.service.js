@@ -284,6 +284,7 @@ async function updateRoom(roomCode, gameScore) {
   // update room status to waiting again in both Redis and PSQL.
   room.status = "waiting";
   await roomCache.hSet(roomCode, {
+    status: room.status,
     globalScore: JSON.stringify(room.globalScore),
     games: JSON.stringify(room.games),
   });
