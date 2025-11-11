@@ -37,54 +37,65 @@ export default function registerRoomSocket(io) {
 
     socketCache.set(socket.userId, socket.id);
 
-    socket.on("chat:message", async ({ code, user, text }) => {
-      SocketEventEmitter.sendMessage({ code, user, text });
-    });
+    /**
+     * Socket Event Handlers
+     */
+    socket.on(
+      "chat:message",
+      withSocketErrorHandling(socket, async ({ code, user, text }) => {
+        SocketEventEmitter.sendMessage({ code, user, text });
+      })
+    );
 
-    socket.on("game:message", async ({ code, user, text }) => {
-      if (!text?.trim()) return;
+    socket.on(
+      "game:message",
+      withSocketErrorHandling(socket, async ({ code, user, text }) => {
+        if (!text?.trim()) return;
 
-      try {
-        const result = await gameService.checkForAnswer(user.id, text, code);
+        try {
+          const result = await gameService.checkForAnswer(user.id, text, code);
 
-        switch (result.type) {
-          case "answer":
-            if (result.correct) {
-              SocketEventEmitter.gameCorrectAnswer(code, user, text, result.game, text);
-            } else {
+          switch (result.type) {
+            case "answer":
+              if (result.correct) {
+                SocketEventEmitter.gameCorrectAnswer(code, user, text, result.game, text);
+              } else {
+                SocketEventEmitter.sendMessage({ code, user, text });
+              }
+              break;
+
+            case "taboo":
+              SocketEventEmitter.tabooWord(user, text, result.word);
+              break;
+
+            default:
               SocketEventEmitter.sendMessage({ code, user, text });
-            }
-            break;
-
-          case "taboo":
-            SocketEventEmitter.tabooWord(user, text, result.word);
-            break;
-
-          default:
-            SocketEventEmitter.sendMessage({ code, user, text });
-            break;
+              break;
+          }
+        } catch (err) {
+          console.error("Error processing game message: ", err);
         }
-      } catch (err) {
-        console.error("Error processing game message: ", err);
-      }
-    });
+      })
+    );
 
-    socket.on("game:skip-word", async ({ userId, roomCode }) => {
-      try {
-        const game = await gameService.getNewWord(userId, roomCode); // retorna el juego o lanza un error
-        SocketEventEmitter.sendNewWord(userId, roomCode, game);
-      } catch (error) {
-        SocketEventEmitter.sendNewWord(userId, roomCode, null, error.message);
-      }
-    });
+    socket.on(
+      "game:skip-word",
+      withSocketErrorHandling(socket, async ({ userId, roomCode }) => {
+        try {
+          const game = await gameService.getNewWord(userId, roomCode);
+          SocketEventEmitter.sendNewWord(userId, roomCode, game);
+        } catch (error) {
+          SocketEventEmitter.sendNewWord(userId, roomCode, null, error.message);
+        }
+      })
+    );
 
-    socket.on("join-team", async ({ roomCode, team, userId }) => {
-      try {
+    socket.on(
+      "join-team",
+      withSocketErrorHandling(socket, async ({ roomCode, team, userId }) => {
         await roomService.updateTeams(roomCode, team, userId);
-      } catch (error) {
-        console.log("error changing team: ", error);
-      }
-    });
+      })
+    );
 
     socket.on("disconnect", async (reason) => {
       try {
@@ -107,9 +118,7 @@ export default function registerRoomSocket(io) {
           });
         }
 
-        // actualizar para que tenga en cuenta desconexiones durante un juego
-
-        // Limpiar mapping de Redis
+        // Limpiar mapping(socket -> userId) de Redis
         await socketCache.del(socket.userId);
         console.log(`🗑️ Cleared socket mapping for userId=${socket.userId}`);
         console.log(`Socket desconectado: ${socket.id}; Reason: ${reason}`);
@@ -118,6 +127,23 @@ export default function registerRoomSocket(io) {
       }
     });
 
+    // Global socket error handler for middlewares.
     socket.on("error", (err) => socketErrorHandler(socket, err));
   });
+}
+
+/**
+ * `WithSocketErrorHandling` wrapper to catch and handle errors in each event
+ * Places the handler logic inside a try-catch block and sends error responses via socket
+ */
+export function withSocketErrorHandling(socket, handler) {
+  return async (...args) => {
+    try {
+      console.log(`Handling event for socket ${socket.id} with args:`, args);
+      await handler(...args);
+    } catch (err) {
+      console.error(`⚠️ Error in event handler for socket ${socket.id}:`, err);
+      socketErrorHandler(socket, err);
+    }
+  };
 }
