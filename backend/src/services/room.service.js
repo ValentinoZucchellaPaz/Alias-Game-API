@@ -48,9 +48,10 @@ async function getRoom(code) {
   let dbRoom = null;
   if (!room || Object.keys(room).length === 0) {
     dbRoom = await Room.findOne({ where: { code } });
-    if (!dbRoom) throw new AppError(`There's no room created with code ${code}`);
+    if (!dbRoom) throw new AppError(`There's no room created with code ${code}`, 400, "room_error");
 
-    if (dbRoom.status == "finished") throw new AppError("This room is no longer active");
+    if (dbRoom.status == "finished")
+      throw new AppError("This room is no longer active", 400, "room_error");
     const roomData = {
       id: dbRoom.id,
       code: dbRoom.code,
@@ -83,12 +84,13 @@ async function joinRoom({ roomCode, userId, userName }) {
   const activePlayers = room.players.map((p) => {
     if (p.active) return p.id;
   });
-  if (activePlayers.length > MAX_PLAYER_PER_ROOM) throw new AppError("This room is full");
+  if (activePlayers.length > MAX_PLAYER_PER_ROOM)
+    throw new AppError("This room is full", 400, "room_error");
 
   const playerInRoom = room.players.find((p) => p.id == userId);
   if (playerInRoom) {
     if (playerInRoom.active) {
-      throw new AppError("User already in the room");
+      throw new AppError("User already in the room", 400, "room_error");
     }
     playerInRoom.active = true;
     room.reconnected = true;
@@ -159,9 +161,6 @@ async function leaveRoom({ roomCode, userId, userName }) {
       await gameService.interruptGame(roomCode, "insufficient-players");
       room.status = "waiting";
     }
-
-    // TODO:
-    // Disable game functionality - not enough players to continue
   } else if (room.teams.red.length < 2) {
     room.teams.red.push(...room.teams.blue.splice(0, 1));
   } else if (room.teams.blue.length < 2) {
@@ -197,6 +196,12 @@ async function startGame(_roomCode) {
   const { roomCode, game } = await gameService.createGame(_roomCode);
 
   const room = await getRoom(roomCode);
+
+  // check if there's more than 4 players active
+  const activePlayers = room.players.reduce((curr, acc) => (curr.active ? acc + 1 : acc));
+  if (activePlayers < 4) {
+    throw new AppError("There's not enough players to play a game", 400, "game_error");
+  }
 
   // update room status to playing
   room.status = "playing";

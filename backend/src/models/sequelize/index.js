@@ -4,6 +4,7 @@ import User from "./User.js";
 import Room from "./Room.js";
 import seedWords from "../../config/seedWords.js";
 import { logger } from "../../utils/logger.js";
+import seedTestPlayers from "../../config/seedTestPlayers.js";
 
 export const syncDB = async () => {
   try {
@@ -14,6 +15,7 @@ export const syncDB = async () => {
     // insert words and admin user if there's not any
     await seedAdmin();
     await seedWords();
+    await seedTestPlayers();
 
     logger.info("✅ DB ready");
   } catch (err) {

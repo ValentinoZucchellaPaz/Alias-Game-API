@@ -251,7 +251,7 @@ export default function RoomPage() {
 
   return (
     <div className="room-page">
-      <button onClick={() => navigate("/")} className="home-button">
+      <button onClick={handleLeaveRoom} className="home-button">
         Home
       </button>
 

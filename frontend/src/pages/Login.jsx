@@ -65,25 +65,17 @@ export default function Login() {
             Login
           </button>
 
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              login("email1@gmail.com", "123456");
-            }}
-          >
-            User1 Login
-          </button>
-
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              login("email2@gmail.com", "123456");
-            }}
-          >
-            User2 Login
-          </button>
+          {[1, 2, 3, 4].map((n) => (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                login(`user${n}@gmail.com`, "123456");
+              }}
+            >
+              User{n} Login
+            </button>
+          ))}
         </div>
         <p className="register-link">
           Don't have an account? <a href="/register">Register here</a>
