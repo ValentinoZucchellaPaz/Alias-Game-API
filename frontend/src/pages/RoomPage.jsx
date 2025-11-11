@@ -6,7 +6,6 @@ import ChatPanel from "../components/ChatPanel";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import "./css/room-page.css";
-import Timer from "../components/Timer";
 import RoomHeader from "../components/RoomHeader";
 
 export default function RoomPage() {
@@ -114,7 +113,6 @@ export default function RoomPage() {
           break;
 
         case "game:interrupted":
-          console.log("Game interrupted message:", message);
           setRoomState("lobby");
           setMessages((prev) => [
             ...prev,
@@ -123,14 +121,6 @@ export default function RoomPage() {
           break;
 
         case "game:new-word":
-          console.log(
-            "recibiendo new word",
-            type,
-            status,
-            data,
-            message,
-            timestamp
-          );
           if (status == "error" && message) {
             console.log("error en new word");
             setError(message);

@@ -61,7 +61,7 @@ class RedisWrapper {
   constructor({ ttl = 3600, prefix = "" }) {
     this.ttl = ttl;
     this.prefix = prefix;
-    this.client = null; // no puedo meter codigo asincrono en constructor, se hace en init()
+    this.client = null; // cannot put async code inside a constructor => init()
   }
 
   async init() {
@@ -100,19 +100,19 @@ class RedisWrapper {
    * @param {*} data
    * @param {*} ttl
    */
-  // Nota: Antes usaba solo hset sin index, pero no habia forma facil de obtener todas las rooms guardadas.
-  // Empeze a usar `zadd` tambien, que es basicamente un sorted set para tener un index de keys con timestamp.
-  // Cada vez que se guarda un hash(por ejemplo una room), se agrega su key a este sorted set(`this._key("index")` o por ejemplo `alias-game:room:index`) con timestamp actual.
-  // Despues, para obtener todas las rooms, se puede hacer un `zrange` en este index para obtener todas las keys guardadas.
+  // Note: Before it used just hset without index, there was no easy way to retrieve all saved rooms
+  // Now uses `zaad` also, basically a sorted set to have an index of keys w a timestamp
+  // Everytime a hash is saved (ex. a room), its key is added to this sorted set(`this._key("index")` or for ex `alias-game:room:index`) w actual timestamp.
+  // For retrieving all rooms use `zrange` in this index to get all saved keys
   async hSet(key, data, ttl) {
     await this.init();
     console.log("redisClient.hSet (esto se esta guardando en redis):", this._key(key), data, ttl);
 
-    // Agregar a index de room codes
+    // adds key as a value in an index
     await this.client.zadd(this._key("index"), Date.now(), this._key(key));
-    // Guardar informacion de la room
+    // save room info
     await this.client.hset(this._key(key), data);
-    // Establecer tiempo de expiracion
+    // set expiration time
     if (ttl ?? this.ttl) await this.client.expire(this._key(key), ttl ?? this.ttl);
   }
 
@@ -123,31 +123,30 @@ class RedisWrapper {
     return Object.keys(data).length ? data : null;
   }
 
-  // Obtener todos los items en el namespace(Wrapper) (ejemplo: todas las rooms)
+  // Get all items from a namespace ex all rooms
   async getAllFromNamespace(limit = 10) {
     await this.init();
 
-    // Obtener todas las keys del index
+    // Get all keys from index zaad
     const keys = await this.client.zrange(this._key("index"), 0, limit - 1);
-    // Obtener todos los hashes asociados a esas keys
+    // Get all hashed asociated to that key
     const values = await Promise.all(
       keys.map(async (key) => {
         let rooms = await this.client.hgetall(key);
         return rooms;
       })
     );
-    // Filtrar valores nulos o vacios y devolver
+    // filter nulls and return
     return values.filter((value) => value && Object.keys(value).length > 0);
   }
 }
 
-// para otros modulos que necesiten el client directamente
+// Export client to other modules
 export async function getRedisClient() {
   return await RedisClientSingleton.getInstance();
 }
 
-// muchos redis client para cada cosa
-const tokenCache = new RedisWrapper({ ttl: 24 * 3600, prefix: "alias-game:token:" }); // min duracion token 1 dia
+const tokenCache = new RedisWrapper({ ttl: 24 * 3600, prefix: "alias-game:token:" }); // min duration token 1 day
 const roomCache = new RedisWrapper({ ttl: 6 * 3600, prefix: "alias-game:room:" }); // code:hSet
 const gameCache = new RedisWrapper({ ttl: 6 * 3600, prefix: "alias-game:game:" }); // code:hSet
 const socketCache = new RedisWrapper({

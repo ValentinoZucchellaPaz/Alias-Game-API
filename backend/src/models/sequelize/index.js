@@ -6,11 +6,12 @@ import seedWords from "../../config/seedWords.js";
 
 export const syncDB = async () => {
   try {
-    const config = process.env.NODE_ENV == "production" ? {} : { alter: true, force: true }; // borra todo cada vez que arranca el server
-    await sequelize.sync(config);
-    // console.log("All tables synced");
+    // const config = process.env.NODE_ENV == "production" ? {} : { alter: true, force: true }; // in dev clears dev on init
+    // await sequelize.sync(config);
+    await sequelize.sync({});
 
-    await seedAdmin(); // Inserta usuario semilla si no existe
+    // insert words and admin user if there's not any
+    await seedAdmin();
     await seedWords();
 
     console.log("✅ DB ready");

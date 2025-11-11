@@ -18,8 +18,8 @@ SocketEventEmitter.init(io);
 
 server.listen(PORT, async () => {
   await syncDB();
-  const client = await RedisClientSingleton.getInstance(); // inicializa singleton
-  await cleanupInterruptedRooms(client); // limpia rooms interrumpidas
+  const client = await RedisClientSingleton.getInstance(); // init singleton
+  await cleanupInterruptedRooms(client); // clear interrupted rooms
   console.log(`Server running on port http://localhost:${PORT}`);
 });
 
@@ -45,11 +45,6 @@ async function cleanupInterruptedRooms(client) {
 
     // Check if room was interrupted.
     if (room.status === "waiting" || room.status === "playing") {
-      // Update Redis
-      await client.hset(key, { ...room, status: "finished" });
-
-      // Delete room from Redis.
-      // Nota: No es necesario actualizar el room como "finished" en redis si se va a borrar, pero no se como lo vamos a querer manejar, si lo dejamos o no.
       await client.del(key);
       await client.zrem(`${roomPrefix}index`, key);
 

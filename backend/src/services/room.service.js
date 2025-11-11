@@ -10,17 +10,16 @@ import gameService from "./game.service.js";
 async function createRoom({ hostId, hostName }) {
   // create room in db, save in redis and emit socket event to join room
 
-  // si host ya esta en otra room no puede crear una nueva
-
   const roomCode = Math.random().toString(36).substring(2, 7).toUpperCase();
   const roomId = uuidv4();
 
+  // FIXME: in a future check what is used to store players, if name or id
   const roomData = {
     id: roomId,
     code: roomCode,
     hostId,
-    players: [{ id: hostId, active: true }], // TODO: do i save userName too?
-    teams: { red: [hostId], blue: [] }, // guardo por nombre o por id?
+    players: [{ id: hostId, active: true }],
+    teams: { red: [hostId], blue: [] },
     globalScore: { red: 0, blue: 0 },
     games: [],
     status: "waiting",
@@ -39,7 +38,6 @@ async function createRoom({ hostId, hostName }) {
   await SocketEventEmitter.joinRoom(roomCode, hostId, hostName);
   SocketEventEmitter.teamState(roomCode, roomData.teams);
 
-  // TODO: if socket connection failed, how do I handle info persistency?
   return roomData;
 }
 
@@ -77,7 +75,6 @@ async function getRoom(code) {
 
 async function joinRoom({ roomCode, userId, userName }) {
   // checks room players, if OK join new player and assign team, save info and emit event
-  // TODO: do i have to check if player (userId) exists?
   const room = await getRoom(roomCode);
 
   // check if room is full -> what is max cap?

@@ -94,7 +94,7 @@ export default function ChatPanel({ messages, socket, roomCode, inGame }) {
           onChange={(e) => setText(e.target.value)}
           placeholder="Escribe un mensaje..."
         />
-        <button type="submit">Enviar</button>
+        <button type="submit">Send</button>
       </div>
     </form>
   );

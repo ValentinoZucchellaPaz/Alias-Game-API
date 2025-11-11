@@ -1,4 +1,3 @@
-import gameService from "../services/game.service.js";
 import roomService from "../services/room.service.js";
 import { SocketEventEmitter } from "../sockets/SocketEventEmmiter.js";
 
@@ -30,7 +29,6 @@ export const leaveRoom = async (req, res) => {
   res.status(200).json(room);
 };
 
-// es realmente necesario?
 export const updateRoomStatus = async (req, res) => {
   const { code } = req.params;
   const { status } = req.body;
@@ -51,10 +49,6 @@ export const getRooms = async (req, res) => {
 
 export const startGame = async (req, res) => {
   const { code } = req.params;
-  // const { words } = req.body;
-  // antes fijarme que no haya games pendientes de esta sala, cerrarlos si es asi?
-  // fijarme que usuario que manda req pertenezca a room y este activo
-
   const { roomCode, game } = await roomService.startGame(code);
   SocketEventEmitter.gameStarted(code, game);
   res.status(201).json(game);

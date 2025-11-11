@@ -13,7 +13,7 @@ import {
 } from "../middlewares/socketMiddlewares/connection.js";
 import { socketErrorHandler } from "../middlewares/socketErrorHandler.js";
 
-// FIXME: idea, que se cambien los eventos para que se dependa menos de las props que se pasan del front, sacar info de redis o de la instancia del socket de aca
+// FIXME: idea, in the future analize a refactor to depend less in the info comming from the client and use redis and the socket instance info to handle here
 
 /**
  * @param {Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>} io
@@ -103,8 +103,7 @@ export default function registerRoomSocket(io) {
 
     socket.on("disconnect", async (reason) => {
       try {
-        // Recuperar todas las rooms del socket (excepto la propia del socket)
-        // Llamar al service para actualizar DB/Redis y emitir evento
+        // Retrieve room the socket was, call service to update DB/Redis and emit event (leave that room)
         const roomCode = socket.currentRoom;
         if (roomCode) {
           const userId = socket.userId;
@@ -122,7 +121,7 @@ export default function registerRoomSocket(io) {
           });
         }
 
-        // Limpiar mapping(socket -> userId) de Redis
+        // Clear mapping (socket -> userId) of Redis
         await socketCache.del(socket.userId);
         console.log(`🗑️ Cleared socket mapping for userId=${socket.userId}`);
         console.log(`Socket desconectado: ${socket.id}; Reason: ${reason}`);

@@ -1,10 +1,6 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../../../config/db.js";
 
-/**
- * Modelo Sequelize para SimilarWord
- * Palabras similares (API Datamuse)
- */
 class SimilarWord extends Model {}
 
 SimilarWord.init(

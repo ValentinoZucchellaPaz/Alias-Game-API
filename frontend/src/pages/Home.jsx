@@ -68,7 +68,7 @@ export default function Home() {
   if (!isConnected) {
     return (
       <div className="lobby-container">
-        <h2>🔌 Conectando al servidor...</h2>
+        <h2>🔌 Connecting to server...</h2>
       </div>
     );
   }

@@ -27,7 +27,7 @@ export default function Register() {
 
   return (
     <div className="login-container">
-      <h2 className="login-title">Crear cuenta</h2>
+      <h2 className="login-title">Create Account</h2>
       {error && (
         <p style={{ color: "red", textAlign: "center" }}>Error: {error}</p>
       )}
@@ -55,7 +55,7 @@ export default function Register() {
           <input
             name="password"
             type={showPassword ? "text" : "password"}
-            placeholder="Contraseña"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -64,7 +64,7 @@ export default function Register() {
             type="button"
             className="toggle-password"
             onClick={() => setShowPassword(!showPassword)}
-            title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            title={showPassword ? "Hide password" : "show password"}
           >
             {showPassword ? "🙈" : "👁️"}
           </button>
@@ -72,7 +72,7 @@ export default function Register() {
 
         <div className="login-button-group">
           <button type="submit" className="btn btn-primary">
-            Registrarse
+            Create
           </button>
 
           <a
@@ -80,7 +80,7 @@ export default function Register() {
             className="btn btn-ghost"
             style={{ textAlign: "center" }}
           >
-            Ya tengo cuenta
+            I have an account
           </a>
         </div>
       </form>

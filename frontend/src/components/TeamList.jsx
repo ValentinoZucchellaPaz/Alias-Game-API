@@ -3,7 +3,7 @@ export default function TeamList({ teams, onJoinRed, onJoinBlue, user }) {
   return (
     <div className="team-list">
       <div className="team-section red">
-        <h2>Equipo Rojo 🔴</h2>
+        <h2>Red Team 🔴</h2>
         <ul>
           {teams.red.map((p) => (
             <li key={p}>
@@ -11,11 +11,11 @@ export default function TeamList({ teams, onJoinRed, onJoinBlue, user }) {
             </li>
           ))}
         </ul>
-        <button onClick={onJoinRed}>Unirse al Rojo</button>
+        <button onClick={onJoinRed}>Join</button>
       </div>
 
       <div className="team-section blue">
-        <h2>Equipo Azul 🔵</h2>
+        <h2>Blue Team 🔵</h2>
         <ul>
           {teams.blue.map((p) => (
             <li key={p}>
@@ -23,7 +23,7 @@ export default function TeamList({ teams, onJoinRed, onJoinBlue, user }) {
             </li>
           ))}
         </ul>
-        <button onClick={onJoinBlue}>Unirse al Azul</button>
+        <button onClick={onJoinBlue}>Join</button>
       </div>
     </div>
   );

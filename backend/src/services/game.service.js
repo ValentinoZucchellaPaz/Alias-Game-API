@@ -11,11 +11,13 @@ import roomService from "./room.service.js";
 async function createGame(roomCode) {
   const room = await roomService.getRoom(roomCode);
   const teams = room.teams;
-
-  // usuario pertenece a room? room no esta en juego? si esta en juego o finished salir
-  // if (teams.some(team => team.players.length < 2)) {
-  //   throw new AppError("Each team must have at least 2 players.");
-  // }
+  console.log(teams);
+  // TODO: check if the player wanting to start a new game belongs to the room
+  // If the room is not waiting for players => reject
+  if (room.status != "waiting") throw new AppError("Cannot start a game now", 400);
+  if (teams.red.length < 2 || teams.blue.length < 2) {
+    throw new AppError("Each team must have at least 2 players.");
+  }
 
   const words = await gameRepository.getWords();
   const game = new Game(roomCode, teams, words);
@@ -71,7 +73,7 @@ async function handleGameTurnNext(roomCode) {
 
   setTimerForGame(roomCode, game);
 
-  SocketEventEmitter.gameTurnUpdated(roomCode, game); // feedback optimista
+  SocketEventEmitter.gameTurnUpdated(roomCode, game); // optimistic feedback
 
   await saveGame(roomCode, game);
 }

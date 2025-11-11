@@ -58,7 +58,7 @@ export function SocketProvider({ children }) {
 
     const handleRoomClosed = ({ roomCode, userName }) => {
       console.log(`🚪 Room ${roomCode} cerrada por ${userName}`);
-      navigate("/home");
+      navigate("/");
     };
 
     // registro handlers

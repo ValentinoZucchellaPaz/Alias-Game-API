@@ -1,10 +1,6 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../../../config/db.js";
 
-/**
- * Modelo Sequelize para TabooWord
- * Palabras prohibidas asociadas a una palabra principal
- */
 class TabooWord extends Model {}
 
 TabooWord.init(

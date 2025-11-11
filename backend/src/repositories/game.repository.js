@@ -16,8 +16,6 @@ async function updateGame(roomCode, gameData) {
   await gameCache.hSet(roomCode, gameData);
 }
 
-// TODO: funcion para eliminar game de redis, por ejemplo cuando se van muchos jugadores
-
 async function getWords(usedWords = [], limit = 10) {
   // build where clause to exclude usedWords (detect if IDs or text)
   const where = {};

@@ -2,7 +2,7 @@ import Word from "./Word.js";
 import TabooWord from "./TabooWord.js";
 import SimilarWord from "./SimilarWord.js";
 
-// Relaciones 1:N
+// Relations 1:N
 Word.hasMany(TabooWord, { foreignKey: "wordId", onDelete: "CASCADE" });
 Word.hasMany(SimilarWord, { foreignKey: "wordId", onDelete: "CASCADE" });
 

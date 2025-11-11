@@ -39,8 +39,7 @@ async function getSpellingSimilarWord(word) {
 }
 
 /**
- * Semilla de palabras estilo Taboo con 4 tipos de similares
- * y normalización a minúsculas
+ * Saves word in DB if there's not any, normalized and lower case them
  */
 export default async function seedWords() {
   const existing = await Word.count();
@@ -64,20 +63,20 @@ export default async function seedWords() {
 
       const entries = Object.entries(data);
 
-      // Insertar palabras + taboo words
+      // Insert words + taboo words
       for (const [rawWord, tabooList] of entries) {
-        const word = rawWord.toLowerCase(); // <-- Convertir a minúsculas
+        const word = rawWord.toLowerCase();
 
         const mainWord = await Word.create({ word, category });
 
         const tabooInserts = tabooList.map((taboo) => ({
           wordId: mainWord.id,
-          tabooWord: taboo.toLowerCase(), // <-- también minúscula
+          tabooWord: taboo.toLowerCase(),
         }));
         await TabooWord.bulkCreate(tabooInserts);
       }
 
-      const words = entries.map(([w]) => w.toLowerCase()); // <-- minúsculas para la lista
+      const words = entries.map(([w]) => w.toLowerCase());
       const batchSize = 20;
       const delayMs = 2;
 

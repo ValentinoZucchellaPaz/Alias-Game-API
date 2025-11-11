@@ -2,33 +2,33 @@ import { Room } from "../models/sequelize/index.js";
 import { roomCache } from "../config/redis.js";
 
 /**
- * Limpia todas las keys de Redis con el prefijo de la instancia pasada
+ * Clear all redis keys with that given prefix
  */
 export async function clearCacheByPrefix(redisInstance) {
-  await redisInstance.init(); // se asegura que la conexión esté lista
+  await redisInstance.init(); // connection ready
 
   const client = redisInstance.client;
   const prefix = redisInstance.prefix;
 
   const keys = await client.keys(`${prefix}*`);
   if (keys.length === 0) {
-    console.log(`ℹ️ No hay claves con prefijo '${prefix}' para borrar.`);
+    console.log(`ℹ️ No keys with prefix '${prefix}' to delete.`);
     return;
   }
 
-  // Redis permite pasar un array de keys a del
+  // Redis allows passing a keys array to del
   await client.del(keys);
-  console.log(`✅ Borradas ${keys.length} claves con prefijo '${prefix}'.`);
+  console.log(`✅ Deleted ${keys.length} keys with prefix '${prefix}'.`);
 }
 
 export async function clearRoomsTable() {
   await Room.destroy({ where: {}, truncate: true });
-  console.log("✅ Tabla Rooms vaciada.");
+  console.log("✅ Room table empty.");
 }
 
 export async function resetDevState() {
   if (process.env.NODE_ENV !== "development") {
-    console.error("❌ Este script solo puede ejecutarse en entorno de desarrollo.");
+    console.error("❌ This script can only be executed in development.");
     process.exit(1);
   }
 
@@ -36,12 +36,11 @@ export async function resetDevState() {
     await clearCacheByPrefix(roomCache);
     await clearRoomsTable();
   } catch (err) {
-    console.error("❌ Error al resetear estado de desarrollo:", err);
+    console.error("❌ Error setting devState:", err);
     process.exit(1);
   }
 
   process.exit(0);
 }
 
-// Ejecuta el reset
 await resetDevState();

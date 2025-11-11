@@ -1,10 +1,6 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../../config/db.js";
 
-/**
- * Modelo Sequelize ESM para Room
- * (estructura igual a ./src/models/sequalize/User.js)
- */
 class Room extends Model {}
 
 Room.init(

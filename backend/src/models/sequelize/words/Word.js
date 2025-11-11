@@ -1,10 +1,6 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../../../config/db.js";
 
-/**
- * Modelo Sequelize para Word
- * Representa la palabra principal del juego (tipo Taboo)
- */
 class Word extends Model {}
 
 Word.init(
@@ -43,7 +39,7 @@ Word.init(
     indexes: [
       {
         unique: true,
-        fields: ["word", "category"], // ✅ unicidad compuesta
+        fields: ["word", "category"],
       },
     ],
   }
