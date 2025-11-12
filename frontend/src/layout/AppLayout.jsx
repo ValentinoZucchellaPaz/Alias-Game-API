@@ -35,7 +35,7 @@ export default function AppLayout({ children }) {
       </main>
 
       <footer className="app-footer">
-        © {new Date().getFullYear()} MyGame. Todos los derechos reservados.
+        © {new Date().getFullYear()} Alias Game. All rights reserved.
       </footer>
     </div>
   );

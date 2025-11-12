@@ -19,7 +19,7 @@ export default function Login() {
           `in ${error.response.data.details[0].path[0]}. ${error.response.data.details[0].message}`
         );
       } else if (error.response?.status == 401) {
-        setError("Datos invalidos");
+        setError("Invalid Credentials");
       } else {
         setError(error.response?.data?.message || error.message);
       }
@@ -53,7 +53,7 @@ export default function Login() {
             type="button"
             className="toggle-password"
             onClick={() => setShowPassword(!showPassword)}
-            title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            title={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? "🙈" : "👁️"}
           </button>
@@ -62,31 +62,23 @@ export default function Login() {
         {/* Button group */}
         <div className="login-button-group">
           <button type="submit" className="btn btn-primary">
-            Entrar
+            Login
           </button>
 
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              login("user1@email.com", "123456");
-            }}
-          >
-            Entrar con user1
-          </button>
-
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              login("user2@email.com", "123456");
-            }}
-          >
-            Entrar con user2
-          </button>
+          {[1, 2, 3, 4].map((n) => (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                login(`user${n}@gmail.com`, "123456");
+              }}
+            >
+              User{n} Login
+            </button>
+          ))}
         </div>
         <p className="register-link">
-          ¿No tienes una cuenta? <a href="/register">Regístrate aquí</a>
+          Don't have an account? <a href="/register">Register here</a>
         </p>
       </form>
     </div>

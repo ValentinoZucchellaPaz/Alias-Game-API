@@ -12,8 +12,9 @@ import {
   socketConnectionRateLimitMiddleware,
 } from "../middlewares/socketMiddlewares/connection.js";
 import { socketErrorHandler } from "../middlewares/socketErrorHandler.js";
+import { logger } from "../utils/logger.js";
 
-// FIXME: idea, que se cambien los eventos para que se dependa menos de las props que se pasan del front, sacar info de redis o de la instancia del socket de aca
+// FIXME: idea, in the future analize a refactor to depend less in the info comming from the client and use redis and the socket instance info to handle here
 
 /**
  * @param {Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>} io
@@ -28,7 +29,7 @@ export default function registerRoomSocket(io) {
   io.use(socketAuthMiddleware);
 
   io.on("connection", (socket) => {
-    console.log(`Socket conectado: ${socket.id}`);
+    logger.info(`Socket conectado: ${socket.id}`);
 
     // Event rate limiters
     socket.use(chatRateLimitMiddleware(socket));
@@ -37,59 +38,73 @@ export default function registerRoomSocket(io) {
 
     socketCache.set(socket.userId, socket.id);
 
-    socket.on("chat:message", async ({ code, user, text }) => {
-      SocketEventEmitter.sendMessage({ code, user, text });
-    });
+    /**
+     * Socket Event Handlers
+     */
+    socket.on(
+      "chat:message",
+      withSocketErrorHandling(socket, async ({ code, user, text }) => {
+        SocketEventEmitter.sendMessage({ code, user, text });
+      })
+    );
 
-    socket.on("game:message", async ({ code, user, text }) => {
-      if (!text?.trim()) return;
+    socket.on(
+      "game:message",
+      withSocketErrorHandling(socket, async ({ code, user, text }) => {
+        if (!text?.trim()) return;
 
-      try {
-        const result = await gameService.checkForAnswer(user.id, text, code);
+        try {
+          const result = await gameService.checkForAnswer(user.id, text, code);
 
-        switch (result.type) {
-          case "answer":
-            if (result.correct) {
-              SocketEventEmitter.gameCorrectAnswer(code, user, text, result.game, text);
-            } else {
+          switch (result.type) {
+            case "answer":
+              if (result.correct) {
+                SocketEventEmitter.gameCorrectAnswer(code, user, text, result.game, text);
+              } else {
+                SocketEventEmitter.sendMessage({ code, user, text });
+              }
+              break;
+
+            case "taboo":
+              SocketEventEmitter.tabooWord(user, text, result.word);
+              break;
+
+            case "similar":
+              SocketEventEmitter.similarWord(code, user, text, result?.similarWord);
+              break;
+
+            default:
               SocketEventEmitter.sendMessage({ code, user, text });
-            }
-            break;
-
-          case "taboo":
-            SocketEventEmitter.tabooWord(user, text, result.word);
-            break;
-
-          default:
-            SocketEventEmitter.sendMessage({ code, user, text });
-            break;
+              break;
+          }
+        } catch (err) {
+          logger.error("Error processing game message: ", err);
         }
-      } catch (err) {
-        console.error("Error processing game message: ", err);
-      }
-    });
+      })
+    );
 
-    socket.on("game:skip-word", async ({ userId, roomCode }) => {
-      try {
-        const game = await gameService.getNewWord(userId, roomCode); // retorna el juego o lanza un error
-        SocketEventEmitter.sendNewWord(userId, roomCode, game);
-      } catch (error) {
-        SocketEventEmitter.sendNewWord(userId, roomCode, null, error.message);
-      }
-    });
+    socket.on(
+      "game:skip-word",
+      withSocketErrorHandling(socket, async ({ userId, roomCode }) => {
+        try {
+          const game = await gameService.getNewWord(userId, roomCode);
+          SocketEventEmitter.sendNewWord(userId, roomCode, game);
+        } catch (error) {
+          SocketEventEmitter.sendNewWord(userId, roomCode, null, error.message);
+        }
+      })
+    );
 
-    socket.on("join-team", async ({ roomCode, team, userId }) => {
-      try {
+    socket.on(
+      "join-team",
+      withSocketErrorHandling(socket, async ({ roomCode, team, userId }) => {
         await roomService.updateTeams(roomCode, team, userId);
-      } catch (error) {
-        console.log("error changing team: ", error);
-      }
-    });
+      })
+    );
 
     socket.on("disconnect", async (reason) => {
       try {
-        // Recuperar todas las rooms del socket (excepto la propia del socket)
-        // Llamar al service para actualizar DB/Redis y emitir evento
+        // Retrieve room the socket was, call service to update DB/Redis and emit event (leave that room)
         const roomCode = socket.currentRoom;
         if (roomCode) {
           const userId = socket.userId;
@@ -107,17 +122,32 @@ export default function registerRoomSocket(io) {
           });
         }
 
-        // actualizar para que tenga en cuenta desconexiones durante un juego
-
-        // Limpiar mapping de Redis
+        // Clear mapping (socket -> userId) of Redis
         await socketCache.del(socket.userId);
-        console.log(`🗑️ Cleared socket mapping for userId=${socket.userId}`);
-        console.log(`Socket desconectado: ${socket.id}; Reason: ${reason}`);
+        logger.info(`🗑️ Cleared socket mapping for userId=${socket.userId}`);
+        logger.info(`Socket desconectado: ${socket.id}; Reason: ${reason}`);
       } catch (err) {
-        console.error(`Error handling disconnect for userId=${socket.userId}`, err);
+        logger.error(`Error handling disconnect for userId=${socket.userId}`, err);
       }
     });
 
+    // Global socket error handler for middlewares.
     socket.on("error", (err) => socketErrorHandler(socket, err));
   });
+}
+
+/**
+ * `WithSocketErrorHandling` wrapper to catch and handle errors in each event
+ * Places the handler logic inside a try-catch block and sends error responses via socket
+ */
+export function withSocketErrorHandling(socket, handler) {
+  return async (...args) => {
+    try {
+      logger.info(`Handling event for socket ${socket.id} with args:`, args);
+      await handler(...args);
+    } catch (err) {
+      logger.error(`⚠️ Error in event handler for socket ${socket.id}:`, err);
+      socketErrorHandler(socket, err);
+    }
+  };
 }

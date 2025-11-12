@@ -1,6 +1,7 @@
 import { RateLimiterRedis } from "rate-limiter-flexible";
 import { RedisClientSingleton } from "../config/redis.js";
 import { RateLimitError } from "../utils/errors.js";
+import { logger } from "../utils/logger.js";
 
 let redisClientPromise = RedisClientSingleton.getInstance();
 
@@ -16,7 +17,7 @@ export async function createLimiter({ keyPrefix, points, duration }) {
 }
 
 export async function tryConsumeLimiter(limiter, key) {
-  console.log("tryConsumeLimiter called with key:", key);
+  logger.info("tryConsumeLimiter called with key:", key);
   try {
     const res = await limiter.consume(key);
     return { success: true, remainingPoints: res.remainingPoints };

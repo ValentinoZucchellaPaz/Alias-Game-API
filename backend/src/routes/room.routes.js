@@ -15,7 +15,6 @@ const router = Router();
 
 router.use(gameLimiterMiddleware);
 
-// Middlewares de auth ya están hechos
 router.post("/", extractTokens, getSession, createRoom);
 router.post("/:code/join", extractTokens, getSession, joinRoom);
 router.post("/:code/start", extractTokens, getSession, startGame);

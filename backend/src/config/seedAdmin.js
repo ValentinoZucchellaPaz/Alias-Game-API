@@ -1,5 +1,6 @@
 import User from "../models/sequelize/User.js";
 import bcrypt from "bcrypt";
+import { logger } from "../utils/logger.js";
 
 export default async function seedAdmin() {
   const adminExists = await User.findOne({ where: { name: "admin" } });
@@ -11,6 +12,6 @@ export default async function seedAdmin() {
       password: hashedPassword,
       role: "admin",
     });
-    console.log("🧑‍💼 Admin user created.");
+    logger.info("🧑‍💼 Admin user created.");
   }
 }

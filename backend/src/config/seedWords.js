@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Word, TabooWord, SimilarWord } from "../models/sequelize/words/index.js";
+import { logger } from "../utils/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,8 +40,7 @@ async function getSpellingSimilarWord(word) {
 }
 
 /**
- * Semilla de palabras estilo Taboo con 4 tipos de similares
- * y normalización a minúsculas
+ * Saves word in DB if there's not any, normalized and lower case them
  */
 export default async function seedWords() {
   const existing = await Word.count();
@@ -48,7 +48,7 @@ export default async function seedWords() {
     return;
   }
 
-  console.log("🌱 Starting word seed from /static...");
+  logger.info("🌱 Starting word seed from /static...");
 
   try {
     const files = await fs.readdir(STATIC_PATH);
@@ -56,7 +56,7 @@ export default async function seedWords() {
 
     for (const file of jsonFiles) {
       const category = path.basename(file, ".json");
-      console.log(`📂 Processing category: ${category}`);
+      logger.info(`📂 Processing category: ${category}`);
 
       const filePath = path.join(STATIC_PATH, file);
       const raw = await fs.readFile(filePath, "utf8");
@@ -64,26 +64,26 @@ export default async function seedWords() {
 
       const entries = Object.entries(data);
 
-      // Insertar palabras + taboo words
+      // Insert words + taboo words
       for (const [rawWord, tabooList] of entries) {
-        const word = rawWord.toLowerCase(); // <-- Convertir a minúsculas
+        const word = rawWord.toLowerCase();
 
         const mainWord = await Word.create({ word, category });
 
         const tabooInserts = tabooList.map((taboo) => ({
           wordId: mainWord.id,
-          tabooWord: taboo.toLowerCase(), // <-- también minúscula
+          tabooWord: taboo.toLowerCase(),
         }));
         await TabooWord.bulkCreate(tabooInserts);
       }
 
-      const words = entries.map(([w]) => w.toLowerCase()); // <-- minúsculas para la lista
+      const words = entries.map(([w]) => w.toLowerCase());
       const batchSize = 20;
       const delayMs = 2;
 
       for (let i = 0; i < words.length; i += batchSize) {
         const batch = words.slice(i, i + batchSize);
-        console.log(`🔎 Processing batch ${i / batchSize + 1} of ${category}...`);
+        logger.info(`🔎 Processing batch ${i / batchSize + 1} of ${category}...`);
 
         await Promise.all(
           batch.map(async (w) => {
@@ -135,7 +135,7 @@ export default async function seedWords() {
 
               if (similars.length > 0) await SimilarWord.bulkCreate(similars);
             } catch (err) {
-              console.error(`❌ Error getting similar word for "${w}":`, err.message);
+              logger.error(`❌ Error getting similar word for "${w}":`, err.message);
             }
           })
         );
@@ -143,11 +143,11 @@ export default async function seedWords() {
         await wait(delayMs);
       }
 
-      console.log(`✅ Category ${category} completed.`);
+      logger.info(`✅ Category ${category} completed.`);
     }
 
-    console.log("🌳 Word seed completed succesfully.");
+    logger.info("🌳 Word seed completed succesfully.");
   } catch (err) {
-    console.error("❌ Error in seedWords:", err);
+    logger.error("❌ Error in seedWords:", err);
   }
 }

@@ -32,7 +32,7 @@ export function SocketProvider({ children }) {
     // si ya hay socket, no hacemos nada
     if (socketRef.current) return;
 
-    const newSocket = io("http://localhost:4000", {
+    const newSocket = io("http://localhost:3000", {
       autoConnect: true,
       auth: { token, override: true },
       // reconnectionAttempts: 3,
@@ -58,7 +58,7 @@ export function SocketProvider({ children }) {
 
     const handleRoomClosed = ({ roomCode, userName }) => {
       console.log(`🚪 Room ${roomCode} cerrada por ${userName}`);
-      navigate("/home");
+      navigate("/");
     };
 
     // registro handlers

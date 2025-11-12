@@ -3,19 +3,23 @@ import seedAdmin from "../../config/seedAdmin.js";
 import User from "./User.js";
 import Room from "./Room.js";
 import seedWords from "../../config/seedWords.js";
+import { logger } from "../../utils/logger.js";
+import seedTestPlayers from "../../config/seedTestPlayers.js";
 
 export const syncDB = async () => {
   try {
-    const config = process.env.NODE_ENV == "production" ? {} : { alter: true, force: true }; // borra todo cada vez que arranca el server
-    await sequelize.sync(config);
-    // console.log("All tables synced");
+    // const config = process.env.NODE_ENV == "production" ? {} : { alter: true, force: true }; // in dev clears dev on init
+    // await sequelize.sync(config);
+    await sequelize.sync({});
 
-    await seedAdmin(); // Inserta usuario semilla si no existe
+    // insert words and admin user if there's not any
+    await seedAdmin();
     await seedWords();
+    await seedTestPlayers();
 
-    console.log("✅ DB ready");
+    logger.info("✅ DB ready");
   } catch (err) {
-    console.error("❌ Failed to sync DB:", err);
+    logger.error("❌ Failed to sync DB:", err);
   }
 };
 

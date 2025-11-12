@@ -1,4 +1,5 @@
 import gameRepository from "../repositories/game.repository.js";
+import { logger } from "../utils/logger.js";
 import { deserialize, serialize } from "../utils/objects.js";
 
 export class Game {
@@ -29,7 +30,7 @@ export class Game {
     const deserializedData = deserialize(data);
 
     if (!deserializedData || Object.keys(deserializedData).length === 0) {
-      console.log("No data found to reconstruct game for room:", roomCode);
+      logger.warn("No data found to reconstruct game for room:", roomCode);
       return null;
     }
 
@@ -135,7 +136,23 @@ export class Game {
     }
     this.chooseNextDescriber();
     await this.pickWord();
-    // console.log("New word to guess:", this.wordToGuess);
+    // logger.log("New word to guess:", this.wordToGuess);
+  }
+
+  updateTeams(teams) {
+    this.teams = {
+      red: { ...this.teams.red, players: teams.red || [] },
+      blue: { ...this.teams.blue, players: teams.blue || [] },
+    };
+
+    // ensure current describer is still valid
+    const currTeam = this.teams[this.currentTeam];
+    if (!currTeam.players.includes(this.currentDescriber)) {
+      logger.log("Current describer left the team, choosing next describer.");
+      this.chooseNextDescriber();
+      return true;
+    }
+    return false;
   }
 
   gameFinish() {

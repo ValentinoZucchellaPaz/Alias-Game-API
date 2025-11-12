@@ -6,7 +6,6 @@ import ChatPanel from "../components/ChatPanel";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import "./css/room-page.css";
-import Timer from "../components/Timer";
 import RoomHeader from "../components/RoomHeader";
 
 export default function RoomPage() {
@@ -113,15 +112,15 @@ export default function RoomPage() {
           ]);
           break;
 
+        case "game:interrupted":
+          setRoomState("lobby");
+          setMessages((prev) => [
+            ...prev,
+            { text: message, status, timestamp },
+          ]);
+          break;
+
         case "game:new-word":
-          console.log(
-            "recibiendo new word",
-            type,
-            status,
-            data,
-            message,
-            timestamp
-          );
           if (status == "error" && message) {
             console.log("error en new word");
             setError(message);
@@ -138,15 +137,41 @@ export default function RoomPage() {
           setError(message);
           break;
 
+        case "game:similar-word":
+          console.log(data.similarWord);
+          setMessages((prev) => [
+            ...prev,
+            {
+              user: data.user,
+              text: message,
+              status,
+              timestamp,
+              similarWord: data.similarWord,
+            },
+          ]);
+          break;
+
         case "room:updated":
           setRoomData((prev) => ({ ...prev, ...data.roomInfo }));
+          break;
+
+        case "game:updated":
+          setGameData((prev) => ({ ...prev, ...data.gameData }));
+          setMessages((prev) => [
+            ...prev,
+            { text: "Game state updated", status, timestamp },
+          ]);
           break;
 
         case "rateLimitWarning":
           if (data.type === "rate_limit") {
             setError(data.message || "Rate limit exceeded");
           }
+          break;
 
+        case "error":
+          console.error("Socket error event:", data);
+          setError(data.message || "Application error occurred");
           break;
 
         default:
@@ -164,18 +189,17 @@ export default function RoomPage() {
       "game:correct-answer",
       "game:turn-updated",
       "game:finished",
+      "game:interrupted",
       "game:taboo-word",
       "game:new-word",
+      "game:similar-word",
+      "game:updated",
       "room:updated",
       "rateLimitWarning",
+      "error",
     ];
 
     eventNames.forEach((event) => socket.on(event, handleSocketEvent));
-
-    socket.on("error", (err) => {
-      console.error("Socket error event:", err);
-      alert("Socket error");
-    });
 
     return () => {
       eventNames.forEach((event) => socket.off(event, handleSocketEvent));
@@ -219,7 +243,6 @@ export default function RoomPage() {
     socket.emit("game:skip-word", { userId: user.id, roomCode });
   };
 
-  console.log("Error state:", error);
   // Render
   if (loading)
     return (
@@ -228,11 +251,9 @@ export default function RoomPage() {
 
   return (
     <div className="room-page">
-      {error && (
-        <p style={{ color: "red", textAlign: "center", marginBottom: "10px" }}>
-          Error: {error}
-        </p>
-      )}
+      <button onClick={handleLeaveRoom} className="home-button">
+        Home
+      </button>
 
       <RoomHeader
         roomCode={roomCode}
@@ -243,6 +264,12 @@ export default function RoomPage() {
         onLeaveRoom={handleLeaveRoom}
         onSkipWord={handleSkipWord}
       />
+
+      {error && (
+        <p style={{ color: "red", textAlign: "center", margin: "10px auto" }}>
+          Error: {error}
+        </p>
+      )}
 
       <main className="room-content">
         <aside className="room-sidebar">

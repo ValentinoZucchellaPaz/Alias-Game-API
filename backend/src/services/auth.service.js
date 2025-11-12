@@ -30,7 +30,6 @@ async function login({ email, password }) {
   const user = await userRepository.findByEmail(email);
   if (!user) throw new AuthError("Invalid credentials");
 
-  // console.error(user);
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) throw new AuthError("Invalid credentials");
 
