@@ -59,8 +59,10 @@ jobs:
         with:
           node-version: 20
           cache: "npm"
+          cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
+        working-directory: ./backend
         run: npm ci
 
       - name: Wait for services to be healthy
@@ -73,4 +75,5 @@ jobs:
           done
 
       - name: Run tests
+        working-directory: ./backend
         run: npm test
