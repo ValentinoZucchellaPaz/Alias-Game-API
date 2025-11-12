@@ -1,5 +1,17 @@
 # 🕹️ Alias Game – Multiplayer Word Guessing Game
 
+1. [Overview](#overview)
+2. [Setup](#setup)
+3. [Project Structure](#project-structure)
+4. [Game Rules (Summary)](#game-rules-summary)
+5. [Architecture Notes](#architecture-notes)
+6. [Endpoints & Sockets](#endpoints--sockets)
+   - [HTTP Endpoints](#http-endpoints)
+   - [WebSocket Events](#websockets-events)
+   - [Examples of Typical Flows](#examples-of-typical-flows)
+7. [Entities Relationship](#entities-relationship)
+8. [Project Summary](#project-summary)
+
 ## Overview
 
 Alias Game is a real-time multiplayer word-guessing game. Players authenticate, create or join rooms, split into Red and Blue teams, and play rounds where teams describe and guess words under a timer.
@@ -53,6 +65,28 @@ backend/
 │
 └── docker-compose.yml      # Docker setup for DB and services
 ```
+
+## Game Rules (Summary)
+
+- The game is played in turns between Red and Blue teams.
+- Each turn, one player becomes the Describer, and the rest are Guessers.
+- The Describer must describe a secret word without using it or any taboo words.
+- Guessers type their guesses in chat — the system gives feedback for similar words.
+- The Describer can skip a word, but each skip adds a cooldown penalty.
+- Each turn lasts 1 minute, then it switches to the other team.
+- Each correct guess gives +1 point; the team with more points wins the match and earns +1 global score.
+
+## Architecture Notes
+
+This project was built with a layered architecture to separate concerns and support real-time features efficiently.
+
+- **HTTP + WebSocket Integration:** combines REST for room lifecycle and authentication with real-time synchronization through Socket.IO.
+- **Redis Game State:** all active games live entirely in Redis, allowing fast lookups and ephemeral data handling.
+- **PostgreSQL Persistence:** stores users, rooms, words and historical results through Sequelize ORM.
+- **Zod + OpenAPI:** used for data validation and automatic API documentation.
+- **Dockerized Setup:** enables isolated environments for the database and backend services.
+
+This design balances _performance_ (fast, in-memory operations via Redis) with _consistency_ (persistent data in SQL) — key to supporting real-time multiplayer behavior without data loss.
 
 ## Endpoints & Sockets
 
@@ -248,3 +282,10 @@ Key constraints
 - Game state exists only in redis when the game is going, when ended results are uploaded to Room; RoomPage toggles between "lobby" and "in-game" in the UI based on that.
 
 ---
+
+## Project Summary
+
+Alias Game was designed as a full-stack, real-time multiplayer experience focused on fast communication and team interaction.  
+Building it involved challenges like synchronizing game state across multiple clients, managing socket events efficiently, and ensuring data consistency between Redis (ephemeral) and PostgreSQL (persistent) storage.
+
+It reflects an architecture aimed at **scalability**, **clear modular design**, and **developer experience** — from backend organization to frontend responsiveness.
