@@ -339,7 +339,9 @@
             }
           }
         }
-      },
+      }
+    },
+    "/rooms/{code}/leave": {
       "delete": {
         "summary": "Leave a room",
         "tags": ["Rooms"],

@@ -12,9 +12,9 @@ import roomRoutes from "./routes/room.routes.js";
 const app = express();
 
 // docs (swagger)
-import swaggerUi from "swagger-ui-express";
-import swaggerDocument from "../../docs/swagger.json" with { type: "json" };
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// import swaggerUi from "swagger-ui-express";
+// import swaggerDocument from "../../docs/swagger.json" with { type: "json" };
+// app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // middlewares
 dotenv.config({ quiet: true });

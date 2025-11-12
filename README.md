@@ -2,7 +2,8 @@
 
 ## Overview
 
-Alias Game is a real-time multiplayer word-guessing game. Players authenticate, join a lobby, create or join rooms, split into Red and Blue teams, and play rounds where teams describe and guess words under a timer. The frontend is a React application that communicates with a backend via HTTP (Axios) and real-time synchronization using Socket.IO (WebSockets). Core frontend responsibilities include authentication flows, room lifecycle (create / join / leave), team assignment, chat, and in-game state updates.
+Alias Game is a real-time multiplayer word-guessing game. Players authenticate, create or join rooms, split into Red and Blue teams, and play rounds where teams describe and guess words under a timer.
+The frontend is a React application that communicates with a backend via HTTP (Axios) and real-time synchronization using WebSockets (Socket.IO).
 
 ---
 
@@ -10,83 +11,172 @@ Alias Game is a real-time multiplayer word-guessing game. Players authenticate, 
 
 To run the project locally:
 
-1. Make sure you have Docker installed and running.  
-2. Open two terminal windows.  
+1. Make sure you have Docker installed and running.
+2. Open two terminal windows.
 3. In the first terminal:
    ```bash
-   - cd backend  
-   - docker compose up --build  
-   - npm install  
-   - npm run dev
+   - cd backend
+   - docker compose up --build # if already started once no param
    ```
-5. In the second terminal:
+4. In the second terminal:
    ```bash
-   - cd frontend  
-   - npm install  
+   - cd frontend
+   - npm install
    - npm run dev
    ```
 
-## Endpoints
+## Endpoints & Sockets
 
-Overview: The frontend uses REST endpoints for authentication, session/token management, and room lifecycle actions. All HTTP calls include credentials and usually use a Bearer token (when present). Endpoints below are expressed as routes relative to the backend base (http://localhost:4000 or http://localhost:4000/api).
+The API uses REST endpoints for authentication and room lifecycle actions (create, join, leave, start game).
+For real-time events uses web sockets (Socket.io).
+Even though these are separate protocols, we used both together to provide a full user experience.
+
+> For more detailed info about endpoints and socket events visit [our swagger docs](https://valentinozucchellapaz.github.io/Alias-Game-API/)
+
+### HTTP endpoints
+
+expressed as relative to the backend base url: http://localhost:3000/api.
 
 POST /auth/register
-- Purpose: register a new user
-- Request body: { email, name, password }
-- Response: 201 Created (or validation/error payload)
-
 POST /auth/login
-- Purpose: login a user and receive an access token
-- Request body: { email, password }
-- Response: { accessToken } on success
-
 POST /auth/logout
-- Purpose: log out, invalidate session or clear refresh cookie
-- Request body: none
-- Response: 200 OK
-- Frontend behavior: calls endpoint then clears token and user from context and navigates to /login
-
 POST /auth/refresh-token
-- Purpose: obtain a new access token using refresh cookie
-- Request body: none
-- Response: { accessToken }
-- Frontend behavior: refreshAccessToken invoked by Axios interceptor on 401s; updates token and user in context and retries the original request
-
 GET /rooms
-- Purpose: fetch list of active rooms (lobby listing)
-- Request: no body; with credentials
-- Response: array of room summaries: [ { code, players, status, ... } ]
-- Frontend usage: Home page fetchRooms to populate RoomList
-
 POST /rooms
-- Purpose: create a new room
-- Request body: none (future: optional settings)
-- Response: { code } (201 Created)
-- Frontend behavior: on success navigate to /room/:code
-
 GET /rooms/:roomCode
-- Purpose: fetch full room details
-- Request: none; with credentials
-- Response: { players, teams, chat, game, status, globalScore, ... }
-- Frontend behavior: RoomPage initial fetch validates player presence & room state; sets teams, messages, and gameData
-
 POST /rooms/:roomCode/join
-- Purpose: join a room (HTTP join endpoint)
-- Request body: none; with credentials
-- Response: 200 OK
-- Frontend behavior: navigates to /room/:roomCode on success
-
 POST /rooms/:roomCode/start
-- Purpose: start the game in the room
-- Request body: none
-- Response: { game } or 200 OK with game state
-- Frontend behavior: sets roomState to in-game and stores returned gameData
-
 DELETE /rooms/:roomCode/leave
-- Purpose: leave the room
-- Request body: none
-- Response: 200 OK
-- Frontend behavior: navigates back to lobby (/)
+
+### Websockets events
+
+Most of the events **sent from the server to the client** are received in the [Room Page](frontend/src/pages/RoomPage.jsx) in the client. While all of them are emmited with the [SocketEventEmitter](backend/src/sockets/SocketEventEmmiter.js) in the server.
+
+The events **sent from the client to the server** are sent in different parts of the client, but all are received in the [socketRegister](backend/src/sockets/registerRoomSocket.js) file.
+
+#### Client side - connection
+
+Client connects with the `socket.io-client` library and passing an access token handshake.
+
+```javascript
+const newSocket = io("http://localhost:3000", {
+  autoConnect: true,
+  auth: { token, override: true }, // override closes other socket connections under the same user
+});
+```
+
+- The server will emmit "connect", "connect_error" on this action
+- We recommend reviewing our [code example](frontend/src/context/SocketContext.jsx)
+
+#### 📨 Client → Server Events
+
+Events the client sends to the server.
+
+- `chat:message`
+  Sends a chat message to the server (code, user, text).
+  The server broadcasts it to all players as chat:message.
+
+- `game:message`
+  Sends a in-game message (code, user, text).
+  The server checks is its a guess, a description or a normal message, makes validations and emits one of:
+  `game:correct-answer`, `game:taboo-word`, `game:similar-word`, or `chat:message`.
+
+- `game:skip-word`
+  Requests to skip the current word (userId, roomCode).
+  The server responds by emitting a `game:new-word` event.
+
+- `join-team`
+  Requests to join a specific team (roomCode, team, userId).
+  The server emits `team-state` event with the teams.
+
+#### 📡 Server → Client Events
+
+Events the server sends to the client.
+
+All events are sent with a fixed payload and handle in the client [here](frontend/src/pages/RoomPage.jsx)
+
+```javascript
+{
+    type, // room:event-name
+    status, // "success" | "error" | "info" | "system" | http-code
+    data, // {} depending on the response
+    message, // string
+    timestamp: new Date().toISOString(),
+}
+```
+
+- `player:joined` / `player:left`
+  Notifies when a player joins or leaves the room.
+  data: { userId, userName, roomCode }
+
+- `chat:message`
+  Chat message broadcast from any player.
+  data: { user, text } user: { id, name, role } (jwt payload)
+
+- `team-state`
+  Updated state of all teams.
+  data: { teams } teams: { red : [userIds], blue: [userIds] }
+
+- `game:started` / `game:finished`
+  Indicates the start or end of a game, including state or results.
+  data: { game, results } results: { red : int, blue: int } and [Game class](#game)
+
+- `game:turn-updated`
+  Notifies when the current turn changes.
+  data: { game } and [Game class](#game)
+
+- `game:correct-answer`
+  Indicates a player guessed correctly and returns the new word (updated game).
+  data: { user, text, game } user: { id, name, role } (jwt payload) and game = [Game class](#game)
+
+- `game:taboo-word`
+  Warns that a taboo word was used (user, word, text).
+  data: { user, word, text } user: { id, name, role } (jwt payload) and word and text are string
+
+- `game:new-word`
+  Sends a new word to guess.(game.wordToGuess with similarWords and tabooWords).
+  data: { game } || {} the status of the payload is either "info" or "error" and game = [Game class](#game)
+
+- `game:similar-word`
+  Notifies when a similar word is detected (similarWord, similarity, type).
+  data: { user, similarWord } user: { id, name, role } (jwt payload) and similarWord: { similarWord, similarity, type }
+
+- `rateLimitWarning`
+  Warns the client that it exceeded the message rate limit.
+
+- `room:updated` / `room:close`
+  Updates room information or indicates that the room was closed
+  data: { room } and [Room](#room)
+
+- `error` and `errorMessage`
+  Internal server error message.
+
+---
+
+#### Examples of typical flows
+
+1. User logs in
+
+- HTTP: POST /auth/login -> receive accessToken
+- Socket: SocketProvider picks up token and establishes socket connection with auth: { token }
+- UI: navigate to home; Home fetches rooms via GET /rooms
+
+2. Joining a room
+
+- From Home: POST /rooms/:code/join (HTTP) -> updates Room status, joins session socket to that room and navigate to RoomPage (/room/:code)
+- RoomPage initial HTTP GET /rooms/:roomCode to load room state
+- Socket: client socket instances subscribes to socket events for the room (recieves all events broadcasted to that room)
+- User clicks "Join Red" -> RoomPage emits join-team { roomCode, team: "red", userId }
+- Backend updates teams and emits team-state to all participants
+- Client receives team-state and updates UI; also receives a player:joined system message for more UI feedback
+
+3. Starting and playing a game
+
+- Room player issues POST /rooms/:roomCode/start -> backend responds with game state
+- Backend also emits game:started to room via socket
+- Client receives game info, UI switches to game view, starts Timer shows current turn describer team and word to the describer.
+- During turns, backend emits game:turn-updated and game:correct-answer events to sync current word, timer, scores
+- When game ends, backend emits game:finished; Client shows GameResults and returns to lobby view
 
 ---
 
@@ -94,156 +184,38 @@ DELETE /rooms/:roomCode/leave
 
 Brief summary of main domain entities and how they relate:
 
-User
+### [User](backend/src/models/sequelize/User.js)
+
 - fields: id, name, email
-- relationships: belongs to Room (as a player); assigned to Team
+- relationships: belongs to Room (as a player); assigned to team
 
-Room
-- fields: code (identifier), status (lobby | in-game | finished), players[], teams, chat[], game, globalScore
-- relationships: contains Players (Users), contains Teams, contains Game
+### [Room](backend/src/models/sequelize/Room.js)
 
-Team
-- names: red, blue
-- fields: list of user ids
-- relationships: assigned to a Room, holds players
+- fields: code (identifier), status (lobby | in-game | finished), players[], teams{}, chat[], games, globalScore
+- Player contains id and active flag, Teams is a red/blue object which contains userIds, Games is a {red: int, blue: int} array containing prev games results
+- relationships: contains Players (User id)
 
-Game
-- fields: current turn, words (list), timer, results, results per team, taboo words, active player/turn info
-- relationships: attached to a Room; updates room state when started/ended and emits events that update Game and Room UI
+### [Game](backend/src/models/Game.js)
 
-ChatMessage (in room.chat)
-- fields: user (id/name), text, type (system | user), status, timestamp
-- stored in Room.chat and updated live via WebSocket events
+Only store in Redis
 
-Relationship diagram (textual)
-User
-  └─ belongs to → Team
-Team
-  └─ part of → Room
-Room
-  └─ contains → Game
-Room
-  └─ contains → ChatMessage[]
+fields
 
-Key constraints inferred from frontend
+- `roomCode`: unique code identifying the room.
+- `teams`: contains red and blue teams with player lists, current describer index, and score.
+- `currentTeam`: which team is currently playing.
+- `currentDescriber`: user ID of the active describer.
+- `wordToGuess`: object with { wordId, word, taboo[], similar[] }.
+- `words`: words separated into { used[], unused[] }.
+- `maxTurns`: number of total turns for the match.
+- `turnsPlayed`: number of turns already completed.
+- `state`: "waiting" | "playing" | "finished".
+- `cooldown`: skip limiter { lastSkipTime, describerId, count }.
+
+Key constraints
+
 - A user must be part of room.players and active to access room page (RoomPage initial fetch enforces this).
 - Rooms may be closed or finished and frontend handles redirects on room:close events.
-- Game state exists in room.game when a game is active; RoomPage toggles between "lobby" and "in-game" in the UI based on that.
-
----
-
-## Websockets interaction
-
-The application uses Socket.IO for real-time events. Socket connection lifecycle, event names, payload expectations, and emit patterns are described below. The SocketProvider creates a socket with token-based auth and exposes socket instance via context. The frontend registers a set of listeners in RoomPage to keep UI in sync.
-
-Connection establishment
-- URL: http://localhost:4000 (SocketProvider uses io("http://localhost:4000"))
-- Options: autoConnect: true, auth: { token, override: true }
-- Socket lifecycle handled in SocketProvider: connects on token presence, disconnects when token is removed.
-- Global handlers: connect, disconnect, connect_error, room:close (room close triggers navigation to /home).
-
-Important client-side emitted events
-- join-team
-  - Emitted by RoomPage when a user clicks to join a team
-  - Payload: { roomCode, team: "red" | "blue", userId }
-  - Expected backend reaction: update team assignment and emit team-state to room participants
-
-- (Potential additional emits inferred)
-  - chat:message (frontend may emit new chat messages; ChatPanel component is wired with socket prop)
-    - Payload: { roomCode, text, type? } (inferred)
-  - game action events (e.g., answer submission, skip, mark correct)
-    - Payloads and event names depend on backend contract
-
-Server-to-client events handled by frontend (RoomPage registers a generic handler)
-- player:joined
-  - Payload: { message, status, timestamp, maybe user } 
-  - Frontend reaction: append system message to chat/messages list
-
-- player:left
-  - Payload: similar to player:joined
-  - Frontend reaction: append system message to chat/messages list
-
-- chat:message
-  - Payload: { user, text, type, status, timestamp }
-  - Frontend reaction: append message to messages array (rendered by ChatPanel)
-
-- team-state
-  - Payload: { teams: { red: [userIds], blue: [userIds] } }
-  - Frontend reaction: update TeamList component data (teams state) to reflect current members
-
-- game:started
-  - Payload: { game } (full game state)
-  - Frontend reaction: set roomState to "in-game", set gameData, append system message
-
-- game:turn-updated
-  - Payload: { game } (updated game state, current turn info)
-  - Frontend reaction: set gameData, set roomState "in-game", append message
-
-- game:correct-answer
-  - Payload: { user, game, message, status, timestamp }
-  - Frontend reaction: update gameData, append message showing who scored / update scores
-
-- game:taboo-word
-  - Payload: { message } (system error notifying taboo word used)
-  - Frontend reaction: surface error to UI (RoomPage sets error state)
-
-- game:finished
-  - Payload: { results }
-  - Frontend reaction: update gameData.results, set roomState back to "lobby", append end-of-game message
-
-- room:updated
-  - Payload: { roomInfo } (metadata updates such as globalScore)
-  - Frontend reaction: merge roomData with new roomInfo (update GlobalResults panel)
-
-- room:close
-  - Payload: { roomCode, userName }
-  - Frontend reaction: navigate to /home; show notification in logs
-
-Client-side listener pattern (RoomPage)
-- RoomPage attaches a generic handler that inspects { type, status, data, message, timestamp } and branches on type.
-- Events are subscribed to via eventNames.forEach((event) => socket.on(event, handleSocketEvent));
-- On unmount or socket change, listeners are removed with socket.off(event, handleSocketEvent).
-
-Timing and UI synchronization notes
-- Timer component is controlled by game state; when a turn changes the backend emits game:turn-updated with new timer info and frontend Timer resets via resetKey prop.
-- On critical server messages (for example: connect_error or auth rejection), SocketProvider may log and the AuthContext can perform logout.
-- Many socket events include both system messages and structured data; the RoomPage keeps a messages array mixing system and user messages to present chat-like history.
-
-Failure and reconnection behavior
-- SocketProvider sets isConnected flag on connect and clears it on disconnect.
-- Home page shows "Connecting to server..." when not connected.
-- Socket errors (connect_error) are logged; the code includes a commented-out logout() call which could be used to force re-auth when auth failure occurs on socket connection.
-
-Examples of typical flows
-
-1) User logs in
-- HTTP: POST /auth/login -> receive accessToken -> AuthContext sets token and user
-- Socket: SocketProvider picks up token and establishes socket connection with auth: { token }
-- UI: navigate to home; Home fetches rooms via GET /rooms
-
-2) Joining a room
-- From Home: POST /rooms/:code/join (HTTP) -> navigate to /room/:code
-- RoomPage initial HTTP GET /rooms/:roomCode to load room state
-- Socket: RoomPage subscribes to socket events for the room
-- User clicks "Join Red" -> RoomPage emits join-team { roomCode, team: "red", userId }
-- Backend updates teams and emits team-state to all participants
-- Frontend receives team-state and updates TeamList; chat receives a player:joined system message
-
-3) Starting and playing a game
-- Room host issues POST /rooms/:roomCode/start -> backend responds with game state
-- Backend also emits game:started to room via socket
-- Frontend receives game:started, sets gameData, sets roomState "in-game", UI switches to game view and starts Timer
-- During turns, backend emits game:turn-updated and game:correct-answer events to sync current word, timer, scores
-- When game ends, backend emits game:finished; frontend shows GameResults and returns to lobby view
-
----
-
-## Notes and Implementation Hints (focused on communication)
-
-- Keep contract stable: The frontend expects certain event names and payload shapes (type/data/message pattern). Any backend change to event names or payload keys must be mirrored in the frontend handlers (RoomPage's switch on type).
-- Use authoritative state from server: game and team state should be considered authoritative — frontend only renders what server provides and relies on events like team-state and game:turn-updated to maintain UI consistency.
-- Error flows: handle 401 via axios response interceptor and refresh-token endpoint. If refresh fails, clear auth and redirect to /login.
-- Socket auth: token is sent in socket auth payload. Backend should validate token on connection and reject (connect_error) or emit an auth failure event that triggers client logout.
-- Keep messages normalized: chat messages and system messages are mixed in the same messages array; include consistent fields (user?, text, type, timestamp, status) so UI rendering is straightforward.
+- Game state exists only in redis when the game is going, when ended results are uploaded to Room; RoomPage toggles between "lobby" and "in-game" in the UI based on that.
 
 ---

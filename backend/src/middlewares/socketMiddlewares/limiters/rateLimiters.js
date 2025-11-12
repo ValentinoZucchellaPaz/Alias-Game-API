@@ -2,13 +2,13 @@ import { createLimiter } from "../../limiterHelpers.js";
 
 export const chatLimiter = await createLimiter({
   keyPrefix: "socket_chat",
-  points: 20,
+  points: 10,
   duration: 10,
 });
 
 export const gameChatLimiter = await createLimiter({
   keyPrefix: "socket_game_chat",
-  points: 20,
+  points: 10,
   duration: 10,
 });
 

@@ -7,7 +7,7 @@ import registerRoomSocket from "./sockets/registerRoomSocket.js";
 import { SocketEventEmitter } from "./sockets/SocketEventEmmiter.js";
 import { logger } from "./utils/logger.js";
 
-const PORT = 4000;
+const PORT = 3000;
 
 const server = createServer(app);
 const io = new Server(server, {

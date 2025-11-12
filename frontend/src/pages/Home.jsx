@@ -9,14 +9,13 @@ export default function Home() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [newRoom, setNewRoom] = useState("");
   const navigate = useNavigate();
   const { socket, isConnected } = useSocket();
 
   const fetchRooms = async () => {
     try {
       setLoading(true);
-      const res = await api.get("http://localhost:4000/api/rooms", {
+      const res = await api.get("/rooms", {
         withCredentials: true,
       });
       console.log("rooms", res.data);
@@ -35,7 +34,7 @@ export default function Home() {
   const handleCreateRoom = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post("http://localhost:4000/api/rooms", {
+      const res = await api.post("/rooms", {
         withCredentials: true,
       });
 
@@ -44,15 +43,13 @@ export default function Home() {
       }
     } catch (err) {
       setError(err.response.data.message || err.message);
-    } finally {
-      setNewRoom("");
     }
   };
 
   const handleJoin = async (roomCode) => {
     try {
       const res = await api.post(
-        `http://localhost:4000/api/rooms/${roomCode}/join`,
+        `/rooms/${roomCode}/join`,
         {},
         { withCredentials: true }
       );
@@ -80,16 +77,10 @@ export default function Home() {
         <p style={{ color: "red", textAlign: "center" }}>Error: {error}</p>
       )}
 
-      {/* Crear Room */}
+      {/* Create Room */}
       <div className="create-room-form">
-        {/* proximamente se ve si las room se crean con settings */}
-        {/* <input
-          type="text"
-          placeholder="New room name"
-          value={newRoom}
-          onChange={(e) => setNewRoom(e.target.value)}
-          className="create-input"
-        /> */}
+        {/* in the future create room w settings */}
+
         <button
           type="submit"
           onClick={handleCreateRoom}
@@ -106,7 +97,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Lista de rooms */}
       <RoomList rooms={rooms} onJoin={handleJoin} />
     </div>
   );
