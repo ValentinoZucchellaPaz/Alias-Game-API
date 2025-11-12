@@ -25,6 +25,35 @@ To run the project locally:
    - npm run dev
    ```
 
+## Project structure
+
+```bash
+backend/
+│
+├── static/                # Static resources
+│   └── json/
+│
+├── src/
+│   ├── config/            # DB/Redis setup and boot config
+│   ├── routes/            # Express route definitions
+│   ├── controllers/       # Route handlers, HTTP logic
+│   ├── services/          # Core business logic and operations
+│   ├── models/            # Domain models and data structures
+│   │   └── sequelize/
+│   ├── repositories/      # Data access layer (DB and cache queries)
+│   ├── middlewares/       # Request validation and socket event guards
+│   │   ├── http/
+│   │   └── sockets/
+│   ├── schemas/           # Zod schemas for validation
+│   ├── sockets/           # Socket.io event handlers and emitters
+│   ├── test/              # Unit and integration tests
+│   ├── utils/             # Helpers and utility functions
+│   ├── app.js             # Express app setup and middleware registration
+│   └── server.js          # Entry point, server and socket initialization
+│
+└── docker-compose.yml      # Docker setup for DB and services
+```
+
 ## Endpoints & Sockets
 
 The API uses REST endpoints for authentication and room lifecycle actions (create, join, leave, start game).
