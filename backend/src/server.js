@@ -18,10 +18,14 @@ registerRoomSocket(io);
 SocketEventEmitter.init(io);
 
 server.listen(PORT, async () => {
-  await syncDB();
-  const client = await RedisClientSingleton.getInstance(); // init singleton
-  await cleanupInterruptedRooms(client); // clear interrupted rooms
-  logger.info(`Server running on port http://localhost:${PORT}`);
+  try {
+    await syncDB();
+    const client = await RedisClientSingleton.getInstance(); // init singleton
+    await cleanupInterruptedRooms(client); // clear interrupted rooms
+    logger.info(`Server running on port http://localhost:${PORT}`);
+  } catch (e) {
+    logger.error("Couldn't start sever due to:", e);
+  }
 });
 
 /**
