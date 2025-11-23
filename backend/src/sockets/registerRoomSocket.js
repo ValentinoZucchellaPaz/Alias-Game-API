@@ -6,7 +6,7 @@ import {
   gameChatRateLimitMiddleware,
   joinTeamRateLimitMiddleware,
 } from "../middlewares/socketMiddlewares/events.js";
-import { SocketEventEmitter } from "./SocketEventEmmiter.js";
+import { buildPayload, SocketEventEmitter } from "./SocketEventEmmiter.js";
 import {
   socketAuthMiddleware,
   socketConnectionRateLimitMiddleware,
@@ -28,6 +28,7 @@ export default function registerRoomSocket(io) {
   // Socket Auth middleware
   io.use(socketAuthMiddleware);
 
+  // io.on('event', handler)
   io.on("connection", (socket) => {
     logger.info(`Socket conectado: ${socket.id}`);
 
@@ -114,12 +115,15 @@ export default function registerRoomSocket(io) {
             userId,
             userName,
           });
-          io.to(roomCode).emit("player:left", {
-            roomCode,
-            userId,
-            userName,
-            timestamp: new Date().toISOString(),
-          });
+          io.to(roomCode).emit(
+            "player:left",
+            buildPayload(
+              "player:left",
+              "info",
+              { roomCode, userId, userName },
+              `${userName} left the room`
+            )
+          );
         }
 
         // Clear mapping (socket -> userId) of Redis

@@ -2,7 +2,7 @@ import { socketCache } from "../config/redis.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
 
-function buildPayload(type, status, data = {}, message = "") {
+export function buildPayload(type, status, data = {}, message = "") {
   return {
     type, // room:event-name
     status, // "success" | "error" | "info" | "system"

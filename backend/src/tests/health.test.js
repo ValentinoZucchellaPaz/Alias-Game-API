@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { Sequelize } from "sequelize";
 import { healthTestCache } from "../config/redis.js";
+import { logger } from "../utils/logger.js";
 
 // Disable redis mocks for this file
 vi.unmock("../../src/config/redis.js");
@@ -41,7 +42,7 @@ describe("Correct connection to Postgres and Redis", () => {
     // dont run tests if any is not connected
     if (!dbConnected || !redisConnected) {
       throw new Error(
-        "Infrastructure not available. Chek if Redis and Postgres containers are running."
+        "Infrastructure not available. Check if Redis and Postgres containers are running."
       );
     }
   }, 8000); // timeout total 8s
