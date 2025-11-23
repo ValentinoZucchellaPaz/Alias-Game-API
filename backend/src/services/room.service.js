@@ -78,6 +78,7 @@ async function getRoom(code) {
 async function joinRoom({ roomCode, userId, userName }) {
   // checks room players, if OK join new player and assign team, save info and emit event
   const room = await getRoom(roomCode);
+  if (room.status !== "waiting") throw new AppError("Cannot join this room now", 400, "room_error");
 
   // check if room is full -> what is max cap?
   const MAX_PLAYER_PER_ROOM = 12;
