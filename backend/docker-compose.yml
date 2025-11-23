@@ -61,8 +61,11 @@ services:
       DB_PORT: 5432
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      ADMIN_EMAIL: admin@alias.com
-      ADMIN_PASSWORD: adminpassword
+      ACCESS_TOKEN_SECRET: una_clave_larga_y_secreta
+      REFRESH_TOKEN_SECRET: otra_clave_tambien_secreta
+      ACCESS_TOKEN_EXP: 15m
+      REFRESH_TOKEN_EXP: 7d
+      NODE_ENV: dev
     depends_on:
       alias_db:
         condition: service_healthy
