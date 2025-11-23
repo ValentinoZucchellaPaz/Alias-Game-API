@@ -3,9 +3,9 @@ import { Room, syncDB } from "./models/sequelize/index.js";
 import { Server } from "socket.io";
 import { RedisClientSingleton } from "./config/redis.js";
 import { createServer } from "http";
-import registerRoomSocket from "./sockets/registerRoomSocket.js";
 import { SocketEventEmitter } from "./sockets/SocketEventEmmiter.js";
 import { logger } from "./utils/logger.js";
+import registerSocketEvents from "./sockets/registerSocketEvents.js";
 
 const PORT = 3000;
 
@@ -14,7 +14,7 @@ const io = new Server(server, {
   cors: { origin: "*" },
 });
 
-registerRoomSocket(io);
+registerSocketEvents(io);
 SocketEventEmitter.init(io);
 
 server.listen(PORT, async () => {
